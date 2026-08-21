@@ -13,6 +13,7 @@ const $ = (selector) => document.querySelector(selector);
 const form = $("#calculator-form");
 const pointsInput = $("#current-points");
 const typeInput = $("#event-type");
+const requestInput = $("#request-date");
 const startInput = $("#start-date");
 const endInput = $("#end-date");
 const endField = $("#end-field");
@@ -23,11 +24,18 @@ const pointsBadge = $("#points-badge");
 const pointsBar = $("#points-bar");
 const currentLevelEl = $("#current-level");
 const policyHint = $("#policy-hint");
-const todayLabel = $("#today-label");
 const quickDateButtons = $("#quick-date-buttons");
+const referenceTodayButton = $("#reference-today-btn");
+const calendarGrid = $("#calendar-grid");
+const calendarTitle = $("#calendar-title");
+const calendarMeta = $("#calendar-meta");
+const calendarPrev = $("#calendar-prev");
+const calendarNext = $("#calendar-next");
+const calendarReset = $("#calendar-reset");
 
-const STORAGE_KEY = "attendance-calculator-v3";
-const DAY_MS = 24 * 60 * 60 * 1000;
+const STORAGE_KEY = "attendance-calculator-v4";
+const DAY_MS = 86_400_000;
+let calendarViewDate = null;
 
 function localToday() {
   const now = new Date();
@@ -35,114 +43,194 @@ function localToday() {
 }
 
 function addDays(date, days) {
-  const next = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const next = new Date(date);
   next.setDate(next.getDate() + days);
-  return next;
+  return new Date(next.getFullYear(), next.getMonth(), next.getDate());
 }
 
-function utcDayNumber(date) {
+function addMonths(date, months) {
+  return new Date(date.getFullYear(), date.getMonth() + months, 1);
+}
+
+function startOfMonth(date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+function utcDay(date) {
   return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / DAY_MS;
 }
 
-function calendarDaysBetween(later, earlier) {
-  if (!later || !earlier) return 0;
-  return Math.round(utcDayNumber(later) - utcDayNumber(earlier));
+function daysBetween(later, earlier) {
+  return later && earlier ? Math.round(utcDay(later) - utcDay(earlier)) : 0;
+}
+
+function sameDate(a, b) {
+  return Boolean(a && b && utcDay(a) === utcDay(b));
+}
+
+function isBefore(a, b) {
+  return Boolean(a && b && utcDay(a) < utcDay(b));
+}
+
+function inRange(date, start, end) {
+  return Boolean(
+    date &&
+      start &&
+      end &&
+      utcDay(date) >= utcDay(start) &&
+      utcDay(date) <= utcDay(end),
+  );
+}
+
+function formatMonth(date) {
+  return new Intl.DateTimeFormat("vi-VN", {
+    month: "long",
+    year: "numeric",
+  }).format(date);
+}
+
+function normalizedType(value = typeInput.value) {
+  return value === "leave-multi" ? "leave" : value;
+}
+
+function durationDays() {
+  if (typeInput.value !== "leave-multi") return 1;
+  const start = parseISODate(startInput.value);
+  const end = parseISODate(endInput.value);
+  return start && end && end >= start ? daysBetween(end, start) + 1 : 1;
+}
+
+function evaluateCandidate(start, request, options = {}) {
+  if (!start || !request) return null;
+
+  const typeValue = options.typeValue ?? typeInput.value ?? "leave";
+  const duration = Math.max(1, options.duration ?? durationDays());
+  const end =
+    typeValue === "leave-multi" ? addDays(start, duration - 1) : start;
+
+  return evaluateAttendance({
+    currentPoints: options.currentPoints ?? pointsInput.value ?? 96,
+    type: normalizedType(typeValue),
+    requestDate: request,
+    startDate: start,
+    endDate: end,
+    noContact: options.noContact ?? noContactInput.checked ?? false,
+  });
+}
+
+function earliestSafeDate(request, options = {}) {
+  for (let offset = 0; request && offset <= 400; offset += 1) {
+    const candidate = addDays(request, offset);
+    const evaluation = evaluateCandidate(candidate, request, options);
+    if (evaluation?.valid && evaluation.deduction === 0) return candidate;
+  }
+  return null;
+}
+
+function defaultSafeDate(today = localToday()) {
+  return (
+    earliestSafeDate(today, {
+      typeValue: "leave",
+      duration: 1,
+      currentPoints: 96,
+      noContact: false,
+    }) || addDays(today, 7)
+  );
 }
 
 function loadState() {
   const today = localToday();
-  const tomorrow = addDays(today, 1);
+  const safe = defaultSafeDate(today);
   const fallback = {
     currentPoints: 96,
     type: "leave",
-    startDate: toISODate(tomorrow),
-    endDate: toISODate(tomorrow),
+    requestDate: toISODate(today),
+    startDate: toISODate(safe),
+    endDate: toISODate(safe),
     noContact: false,
   };
 
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-    return saved ? { ...fallback, ...saved } : fallback;
+    return {
+      ...fallback,
+      ...(JSON.parse(localStorage.getItem(STORAGE_KEY) || "null") || {}),
+    };
   } catch {
     return fallback;
   }
 }
 
 function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({
-    currentPoints: Number(pointsInput.value),
-    type: typeInput.value,
-    startDate: startInput.value,
-    endDate: endInput.value,
-    noContact: noContactInput.checked,
-  }));
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify({
+      currentPoints: Number(pointsInput.value),
+      type: typeInput.value,
+      requestDate: requestInput.value,
+      startDate: startInput.value,
+      endDate: endInput.value,
+      noContact: noContactInput.checked,
+    }),
+  );
 }
 
 function setInitialState() {
   const state = loadState();
   pointsInput.value = state.currentPoints;
   typeInput.value = state.type;
+  requestInput.value = state.requestDate;
   startInput.value = state.startDate;
   endInput.value = state.endDate;
   noContactInput.checked = state.noContact;
+  calendarViewDate = startOfMonth(
+    parseISODate(state.startDate) || localToday(),
+  );
   toggleEndDate();
 }
 
-function normalizedType() {
-  return typeInput.value === "leave-multi" ? "leave" : typeInput.value;
-}
-
 function toggleEndDate() {
-  const isMultiDay = typeInput.value === "leave-multi";
-  endField.hidden = !isMultiDay;
-  endInput.required = isMultiDay;
+  const multi = typeInput.value === "leave-multi";
+  endField.hidden = !multi;
+  endInput.required = multi;
 
-  if (isMultiDay && (!endInput.value || endInput.value < startInput.value)) {
+  if (multi && (!endInput.value || endInput.value < startInput.value)) {
     endInput.value = startInput.value;
   }
 
   if (typeInput.value === "leave") {
     policyHint.textContent = "Nghỉ 1 ngày cần báo trước ít nhất 1 tuần";
-    return;
-  }
-  if (typeInput.value === "leave-multi") {
+  } else if (multi) {
     policyHint.textContent = "Tự xác định theo tổng số ngày nghỉ";
-    return;
+  } else {
+    policyHint.textContent = RULES[normalizedType()]?.shortLabel || "";
   }
-
-  const base = RULES[normalizedType()];
-  policyHint.textContent = base?.shortLabel || "";
 }
 
-function levelPillClass(level) {
+function levelTone(level) {
   if (level === 0) return "border-emerald-400/20 bg-emerald-400/10 text-emerald-200";
   if (level === 1) return "border-blue-400/20 bg-blue-400/10 text-blue-200";
   if (level === 2) return "border-amber-400/20 bg-amber-400/10 text-amber-200";
   return "border-rose-400/20 bg-rose-400/10 text-rose-200";
 }
 
-function renderTopSummary(points) {
+function renderTop(points, referenceDate) {
   const safePoints = Math.max(0, Math.min(100, Number(points) || 0));
   const level = getViolationLevel(safePoints);
-  const period = getEvaluationPeriod(localToday());
+  const period = getEvaluationPeriod(referenceDate || localToday());
 
   periodEl.textContent = `${formatDateVN(period.start)} – ${formatDateVN(period.end)}`;
   pointsBadge.textContent = safePoints;
   pointsBar.style.width = `${safePoints}%`;
-  currentLevelEl.textContent = level.level === 0 ? "Chưa Mức 1" : level.name;
-  currentLevelEl.className = `rounded-full border px-3 py-1.5 text-xs font-semibold ${levelPillClass(level.level)}`;
+  currentLevelEl.textContent = level.level ? level.name : "Chưa Mức 1";
+  currentLevelEl.className = `inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold ${levelTone(level.level)}`;
 }
 
 function renderError(message) {
   result.innerHTML = `
-    <div class="flex min-h-[360px] flex-col items-center justify-center text-center">
-      <div class="flex size-14 items-center justify-center rounded-2xl bg-rose-50 text-rose-600 ring-1 ring-rose-100">
-        <svg viewBox="0 0 24 24" fill="none" class="size-6" aria-hidden="true">
-          <path d="M12 8v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-        </svg>
-      </div>
-      <h2 class="mt-4 text-xl font-bold tracking-tight text-slate-950">Chưa thể tính</h2>
-      <p class="mt-2 max-w-sm text-sm leading-6 text-slate-500">${message}</p>
+    <div class="flex min-h-[220px] flex-col items-center justify-center text-center">
+      <div class="flex size-12 items-center justify-center rounded-2xl bg-rose-50 text-xl font-black text-rose-600">!</div>
+      <h2 class="mt-3 text-lg font-bold">Chưa thể tính</h2>
+      <p class="mt-1.5 text-xs leading-5 text-slate-500">${message}</p>
     </div>
   `;
 }
@@ -153,111 +241,261 @@ function renderResult(data, requestDate, startDate) {
     return;
   }
 
-  const isSafe = data.deduction === 0;
-  const levelChanged = data.projectedLevel.level > data.currentLevel.level;
-  const noticeDays = calendarDaysBetween(startDate, requestDate);
-  const lateBy = Math.max(0, calendarDaysBetween(requestDate, data.deadline));
+  const safe = data.deduction === 0;
+  const lateBy = Math.max(0, daysBetween(requestDate, data.deadline));
+  const notice = noContactInput.checked
+    ? "Không báo"
+    : `${Math.max(0, daysBetween(startDate, requestDate))} ngày`;
+  const safeDate = safe ? startDate : earliestSafeDate(requestDate);
 
-  const statusLabel = isSafe ? "Trong hạn" : `Dự kiến -${data.deduction} điểm`;
-  const statusClass = isSafe
-    ? "bg-emerald-50 text-emerald-700 ring-emerald-200"
-    : "bg-amber-50 text-amber-700 ring-amber-200";
-  const iconClass = isSafe
-    ? "bg-emerald-50 text-emerald-600 ring-emerald-100"
-    : "bg-amber-50 text-amber-600 ring-amber-100";
-  const scoreClass = isSafe ? "text-emerald-600" : "text-blue-600";
-  const timingClass = isSafe
-    ? "border-emerald-200 bg-emerald-50/70 text-emerald-900"
-    : "border-amber-200 bg-amber-50/70 text-amber-950";
+  const tone = safe
+    ? {
+        box: "border-emerald-200 bg-emerald-50/70 text-emerald-950",
+        badge: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+        score: "text-emerald-600",
+      }
+    : data.deduction === 1
+      ? {
+          box: "border-amber-200 bg-amber-50/70 text-amber-950",
+          badge: "bg-amber-50 text-amber-700 ring-amber-200",
+          score: "text-amber-600",
+        }
+      : {
+          box: "border-rose-200 bg-rose-50/70 text-rose-950",
+          badge: "bg-rose-50 text-rose-700 ring-rose-200",
+          score: "text-rose-600",
+        };
 
-  const timingMessage = data.timely
-    ? `Bạn vẫn còn trong hạn. Mốc chậm nhất là <strong>${formatDateVN(data.deadline)}</strong>.`
-    : `Mốc chậm nhất là <strong>${formatDateVN(data.deadline)}</strong>. Tính từ hôm nay đã trễ <strong>${lateBy} ngày</strong>.`;
+  const title = safe
+    ? "Ngày này đang an toàn"
+    : data.deduction === 1
+      ? "Ngày này sẽ bị trừ 1 điểm"
+      : "Ngày này sẽ bị trừ 2 điểm";
 
-  const levelNote = levelChanged
-    ? `<div class="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-900"><strong>Cảnh báo:</strong> Điểm dự kiến chuyển từ ${data.currentLevel.name} sang ${data.projectedLevel.name}.</div>`
-    : `<div class="mt-5 flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm"><span class="text-slate-500">Vùng điểm sau dự kiến</span><strong class="text-slate-800">${data.projectedLevel.name} · ${data.projectedLevel.range}</strong></div>`;
+  const timing = safe
+    ? `Đủ thời gian báo trước. Hạn chót: <strong>${formatDateVN(data.deadline)}</strong>.`
+    : `Hạn chót là <strong>${formatDateVN(data.deadline)}</strong>; mốc hiện tại đã chậm <strong>${lateBy} ngày</strong>.`;
 
-  const scenarioLabel = noContactInput.checked ? "Không báo trước" : `${Math.max(0, noticeDays)} ngày`;
+  const suggestion =
+    !safe && safeDate
+      ? `
+        <div class="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+          <div class="flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <div class="text-[10px] font-bold uppercase tracking-wide text-emerald-700">Ngày an toàn gần nhất</div>
+              <div class="mt-1 truncate text-sm font-bold text-emerald-950">${formatDateVN(safeDate)}</div>
+            </div>
+            <button type="button" data-use-safe-date="${toISODate(safeDate)}" class="shrink-0 rounded-lg bg-emerald-600 px-2.5 py-2 text-[10px] font-bold text-white hover:bg-emerald-700">Chọn ngày này</button>
+          </div>
+        </div>
+      `
+      : "";
 
   result.innerHTML = `
-    <div class="flex items-start justify-between gap-4">
-      <div>
-        <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Kết quả dự kiến</p>
-        <h2 class="mt-2 text-2xl font-bold tracking-tight text-slate-950">${isSafe ? "Không bị trừ điểm" : "Cần lưu ý mốc báo trước"}</h2>
-      </div>
-      <span class="shrink-0 rounded-full px-3 py-1.5 text-xs font-bold ring-1 ring-inset ${statusClass}">${statusLabel}</span>
-    </div>
-
-    <div class="mt-7 flex items-center gap-4 rounded-3xl border border-slate-100 bg-slate-50/70 p-5 sm:p-6">
-      <div class="flex size-12 shrink-0 items-center justify-center rounded-2xl ring-1 ${iconClass}">
-        ${isSafe
-          ? `<svg viewBox="0 0 24 24" fill="none" class="size-6" aria-hidden="true"><path d="m5 12.5 4.2 4.2L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
-          : `<svg viewBox="0 0 24 24" fill="none" class="size-6" aria-hidden="true"><path d="M12 8v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`}
-      </div>
+    <div class="flex items-start justify-between gap-3">
       <div class="min-w-0">
-        <div class="text-xs font-semibold uppercase tracking-wide text-slate-400">Điểm sau dự kiến</div>
-        <div class="mt-1 flex items-baseline gap-1">
-          <strong class="text-4xl font-extrabold tracking-tight ${scoreClass}">${data.projectedPoints}</strong>
-          <span class="text-sm font-semibold text-slate-400">/100</span>
-        </div>
-        <div class="mt-1 text-xs font-medium text-slate-500">${data.currentPoints} → ${data.projectedPoints} điểm</div>
+        <p class="text-[10px] font-bold uppercase tracking-[.14em] text-slate-400">Kết quả dự kiến</p>
+        <h2 class="mt-1.5 text-xl font-bold leading-6 tracking-tight text-slate-950">${title}</h2>
       </div>
+      <span class="shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ring-1 ring-inset ${tone.badge}">${safe ? "0 điểm" : `-${data.deduction} điểm`}</span>
     </div>
 
-    <div class="mt-5 grid grid-cols-3 gap-2 sm:gap-3">
-      <div class="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
-        <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Hôm nay</div>
-        <div class="mt-1 text-sm font-bold text-slate-900">${formatDateVN(requestDate)}</div>
+    <div class="mt-4 flex items-end justify-between rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100">
+      <div>
+        <div class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Điểm sau dự kiến</div>
+        <div class="mt-1 flex items-baseline gap-1"><strong class="text-4xl font-extrabold tracking-tight ${tone.score}">${data.projectedPoints}</strong><span class="text-xs font-semibold text-slate-400">/100</span></div>
       </div>
-      <div class="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
-        <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Ngày nghỉ</div>
-        <div class="mt-1 text-sm font-bold text-slate-900">${formatDateVN(startDate)}</div>
-      </div>
-      <div class="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
-        <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Báo trước</div>
-        <div class="mt-1 text-sm font-bold text-slate-900">${scenarioLabel}</div>
-      </div>
+      <div class="pb-1 text-right text-[10px] font-medium text-slate-400">${data.currentPoints} → ${data.projectedPoints}</div>
     </div>
 
-    <div class="mt-5 rounded-2xl border px-4 py-4 text-sm leading-6 ${timingClass}">${timingMessage}</div>
-
-    <div class="mt-5 rounded-2xl border border-slate-200 p-4">
-      <div class="flex items-start gap-3">
-        <div class="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600">
-          <svg viewBox="0 0 24 24" fill="none" class="size-4" aria-hidden="true"><path d="M9 12.75 11.25 15 15 9.75M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </div>
-        <div>
-          <div class="text-xs font-semibold uppercase tracking-wide text-slate-400">Quy tắc áp dụng</div>
-          <div class="mt-1 text-sm font-bold text-slate-900">${data.rule.noticeLabel}</div>
-          <p class="mt-1 text-xs leading-5 text-slate-500">${data.rule.label}. ${data.reason}</p>
-        </div>
-      </div>
+    <div class="mt-3 grid grid-cols-3 divide-x divide-slate-100 rounded-xl border border-slate-200 bg-white">
+      <div class="p-2.5"><span class="block text-[9px] uppercase tracking-wide text-slate-400">Mốc tính</span><strong class="mt-1 block text-xs text-slate-800">${formatDateVN(requestDate)}</strong></div>
+      <div class="p-2.5"><span class="block text-[9px] uppercase tracking-wide text-slate-400">Ngày nghỉ</span><strong class="mt-1 block text-xs text-slate-800">${formatDateVN(startDate)}</strong></div>
+      <div class="p-2.5"><span class="block text-[9px] uppercase tracking-wide text-slate-400">Báo trước</span><strong class="mt-1 block text-xs text-slate-800">${notice}</strong></div>
     </div>
 
-    ${levelNote}
+    <div class="mt-3 rounded-xl border px-3 py-2.5 text-xs leading-5 ${tone.box}">${timing}</div>
+    ${suggestion}
+
+    <details class="group mt-3 rounded-xl border border-slate-200 bg-white">
+      <summary class="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5 text-xs font-semibold text-slate-600">Chi tiết quy tắc<svg viewBox="0 0 20 20" fill="none" class="size-3.5 text-slate-400 transition group-open:rotate-180"><path d="m5 7.5 5 5 5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+      <div class="border-t border-slate-100 px-3 py-3"><div class="text-xs font-bold text-slate-800">${data.rule.noticeLabel}</div><p class="mt-1 text-[11px] leading-5 text-slate-500">${data.rule.label}. ${data.reason}</p></div>
+    </details>
   `;
 }
 
-function calculate() {
+function chip(label, value, tone) {
+  const className =
+    {
+      blue: "border-blue-100 bg-blue-50 text-blue-700",
+      amber: "border-amber-100 bg-amber-50 text-amber-700",
+      violet: "border-violet-100 bg-violet-50 text-violet-700",
+      green: "border-emerald-100 bg-emerald-50 text-emerald-700",
+      rose: "border-rose-100 bg-rose-50 text-rose-700",
+      slate: "border-slate-200 bg-slate-100 text-slate-500",
+    }[tone] || "border-slate-200 bg-slate-50 text-slate-600";
+
+  return `
+    <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${className}">
+      <span class="font-medium opacity-70">${label}</span>${value}
+    </span>
+  `;
+}
+
+function renderCalendar(data, requestDate, startDate, endDate) {
+  if (!calendarGrid) return;
+
+  const focus = startDate || requestDate || localToday();
+  if (!calendarViewDate) calendarViewDate = startOfMonth(focus);
+
+  const month = startOfMonth(calendarViewDate);
+  const deadline = data?.valid ? data.deadline : null;
+  const actualEnd = endDate || startDate;
+
+  calendarTitle.textContent = formatMonth(month);
+  calendarMeta.innerHTML = [
+    chip("Mốc tính", requestDate ? formatDateVN(requestDate) : "—", "blue"),
+    chip("Hạn chót", deadline ? formatDateVN(deadline) : "—", "amber"),
+    chip(
+      "Nghỉ",
+      startDate
+        ? actualEnd && !sameDate(startDate, actualEnd)
+          ? `${formatDateVN(startDate)} → ${formatDateVN(actualEnd)}`
+          : formatDateVN(startDate)
+        : "—",
+      "violet",
+    ),
+    chip("An toàn", "0", "green"),
+    chip("Cảnh báo", "-1", "amber"),
+    chip("Vi phạm", "-2", "rose"),
+    chip("Đã qua", "", "slate"),
+  ].join("");
+
+  const gridStart = addDays(month, -((month.getDay() + 6) % 7));
   const today = localToday();
-  const startDate = parseISODate(startInput.value);
-  const isMultiDay = typeInput.value === "leave-multi";
-  const endDate = isMultiDay ? parseISODate(endInput.value) : startDate;
+  const cells = [];
+
+  for (let index = 0; index < 42; index += 1) {
+    const date = addDays(gridStart, index);
+    const current =
+      date.getMonth() === month.getMonth() &&
+      date.getFullYear() === month.getFullYear();
+    const beforeReference = current && requestDate && isBefore(date, requestDate);
+    const evaluation =
+      current && !beforeReference ? evaluateCandidate(date, requestDate) : null;
+    const deduction = evaluation?.deduction;
+
+    let status = "border-transparent bg-slate-50/60 text-slate-300";
+    let label = "";
+    let selectable = false;
+
+    if (beforeReference) {
+      status = "border-slate-100 bg-slate-50/80 text-slate-300 opacity-60";
+      label = "Đã qua";
+    } else if (current && deduction === 0) {
+      status = "border-emerald-100 bg-emerald-50/90 hover:bg-emerald-100";
+      label = "An toàn";
+      selectable = true;
+    } else if (current && deduction === 1) {
+      status = "border-amber-100 bg-amber-50/90 hover:bg-amber-100";
+      label = "-1";
+      selectable = true;
+    } else if (current && deduction >= 2) {
+      status = "border-rose-100 bg-rose-50/90 hover:bg-rose-100";
+      label = "-2";
+      selectable = true;
+    } else if (current) {
+      status = "border-slate-100 bg-white";
+      selectable = Boolean(requestDate);
+    }
+
+    const classes = [
+      "relative min-h-[58px] rounded-xl border p-1.5 text-left transition sm:min-h-[72px] sm:p-2",
+      status,
+      selectable ? "cursor-pointer" : "cursor-default",
+    ];
+
+    if (inRange(date, startDate, actualEnd)) {
+      classes.push("outline outline-2 outline-offset-[-2px] outline-violet-500");
+    }
+    if (sameDate(date, requestDate)) {
+      classes.push("ring-2 ring-inset ring-blue-500");
+    }
+    if (sameDate(date, deadline)) {
+      classes.push("shadow-[inset_0_0_0_2px_rgba(245,158,11,.8)]");
+    }
+    if (sameDate(date, today)) {
+      classes.push(
+        "after:pointer-events-none after:absolute after:inset-1 after:rounded-lg after:border after:border-dashed after:border-slate-500/60",
+      );
+    }
+
+    const labelClass = beforeReference
+      ? "text-slate-300"
+      : deduction === 0
+        ? "text-emerald-700"
+        : deduction === 1
+          ? "text-amber-700"
+          : "text-rose-700";
+
+    const dataAttribute = selectable
+      ? `data-calendar-date="${toISODate(date)}"`
+      : "disabled";
+
+    cells.push(`
+      <button type="button" ${dataAttribute} class="${classes.join(" ")}" title="${formatDateVN(date)}${label ? ` · ${label}` : ""}">
+        <div class="flex items-start justify-between">
+          <span class="flex size-6 items-center justify-center rounded-lg text-[11px] font-bold ${sameDate(date, today) ? "bg-slate-900 text-white" : current ? beforeReference ? "text-slate-300" : "text-slate-800" : "text-slate-300"}">${date.getDate()}</span>
+          <span class="flex gap-1">
+            ${sameDate(date, requestDate) ? '<i class="size-1.5 rounded-full bg-blue-500"></i>' : ""}
+            ${sameDate(date, deadline) ? '<i class="size-1.5 rounded-full bg-amber-500"></i>' : ""}
+            ${inRange(date, startDate, actualEnd) ? '<i class="size-1.5 rounded-full bg-violet-500"></i>' : ""}
+          </span>
+        </div>
+        ${label ? `<div class="mt-2 hidden text-[8px] font-extrabold uppercase tracking-wide ${labelClass} sm:block">${label}</div>` : ""}
+      </button>
+    `);
+  }
+
+  calendarGrid.innerHTML = cells.join("");
+}
+
+function calculate() {
+  const request = parseISODate(requestInput.value);
+  const start = parseISODate(startInput.value);
+  const multi = typeInput.value === "leave-multi";
+  const end = multi ? parseISODate(endInput.value) : start;
+
+  if (!request) {
+    renderError("Vui lòng chọn mốc tính hợp lệ.");
+    renderCalendar(null, null, start, end);
+    return;
+  }
 
   const data = evaluateAttendance({
     currentPoints: pointsInput.value,
     type: normalizedType(),
-    requestDate: today,
-    startDate,
-    endDate,
+    requestDate: request,
+    startDate: start,
+    endDate: end,
     noContact: noContactInput.checked,
   });
 
-  todayLabel.textContent = formatDateVN(today);
-  renderTopSummary(pointsInput.value);
-  renderResult(data, today, startDate);
+  renderTop(pointsInput.value, request);
+  renderResult(data, request, start);
+  renderCalendar(data, request, start, end);
   saveState();
+}
+
+function selectStartDate(date) {
+  const oldDuration = durationDays();
+  startInput.value = toISODate(date);
+  endInput.value =
+    typeInput.value === "leave-multi"
+      ? toISODate(addDays(date, oldDuration - 1))
+      : startInput.value;
+  calendarViewDate = startOfMonth(date);
+  calculate();
 }
 
 typeInput.addEventListener("change", () => {
@@ -266,23 +504,67 @@ typeInput.addEventListener("change", () => {
 });
 
 startInput.addEventListener("change", () => {
-  if (typeInput.value === "leave-multi" && (!endInput.value || endInput.value < startInput.value)) {
+  if (
+    typeInput.value === "leave-multi" &&
+    (!endInput.value || endInput.value < startInput.value)
+  ) {
     endInput.value = startInput.value;
   }
+  const date = parseISODate(startInput.value);
+  if (date) calendarViewDate = startOfMonth(date);
   calculate();
 });
 
 quickDateButtons.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-offset]");
   if (!button) return;
+  selectStartDate(
+    addDays(
+      parseISODate(requestInput.value) || localToday(),
+      Number(button.dataset.offset),
+    ),
+  );
+});
 
-  const targetDate = addDays(localToday(), Number(button.dataset.offset));
-  startInput.value = toISODate(targetDate);
-  if (typeInput.value !== "leave-multi") {
-    endInput.value = startInput.value;
-  } else if (!endInput.value || endInput.value < startInput.value) {
-    endInput.value = startInput.value;
+referenceTodayButton.addEventListener("click", () => {
+  requestInput.value = toISODate(localToday());
+  calculate();
+});
+
+result.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-use-safe-date]");
+  if (button) selectStartDate(parseISODate(button.dataset.useSafeDate));
+});
+
+calendarGrid?.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-calendar-date]");
+  if (button && !button.disabled) {
+    selectStartDate(parseISODate(button.dataset.calendarDate));
   }
+});
+
+calendarPrev?.addEventListener("click", () => {
+  calendarViewDate = addMonths(
+    calendarViewDate || startOfMonth(localToday()),
+    -1,
+  );
+  calculate();
+});
+
+calendarNext?.addEventListener("click", () => {
+  calendarViewDate = addMonths(
+    calendarViewDate || startOfMonth(localToday()),
+    1,
+  );
+  calculate();
+});
+
+calendarReset?.addEventListener("click", () => {
+  calendarViewDate = startOfMonth(
+    parseISODate(startInput.value) ||
+      parseISODate(requestInput.value) ||
+      localToday(),
+  );
   calculate();
 });
 
@@ -294,12 +576,15 @@ form.addEventListener("submit", (event) => {
 
 $("#reset-btn").addEventListener("click", () => {
   localStorage.removeItem(STORAGE_KEY);
-  const tomorrow = addDays(localToday(), 1);
+  const today = localToday();
+  const safe = defaultSafeDate(today);
   pointsInput.value = 96;
   typeInput.value = "leave";
-  startInput.value = toISODate(tomorrow);
+  requestInput.value = toISODate(today);
+  startInput.value = toISODate(safe);
   endInput.value = startInput.value;
   noContactInput.checked = false;
+  calendarViewDate = startOfMonth(safe);
   toggleEndDate();
   calculate();
 });
