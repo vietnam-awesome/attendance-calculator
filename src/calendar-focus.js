@@ -1,3 +1,9 @@
+const favicon = document.createElement("link");
+favicon.rel = "icon";
+favicon.type = "image/svg+xml";
+favicon.href = "./favicon.svg";
+document.head.appendChild(favicon);
+
 const calendarReset = document.querySelector("#calendar-reset");
 const calendarGrid = document.querySelector("#calendar-grid");
 const startInput = document.querySelector("#start-date");
@@ -44,8 +50,6 @@ function normalizePastCells() {
   calendarGrid
     .querySelectorAll('button[disabled][title*="Đã qua"]')
     .forEach((day) => {
-      // Past dates always win visually over deadline / selected-date markers.
-      // Keep the deadline in the summary chip, but do not highlight a past cell.
       day.style.boxShadow = "none";
       day.style.outline = "none";
       day.querySelectorAll("i").forEach((marker) => marker.remove());
@@ -56,8 +60,6 @@ function focusSelectedDay({ scroll = false } = {}) {
   const value = startInput?.value;
   if (!value || !calendarGrid) return;
 
-  // app.js re-renders the grid when the selected month/date changes.
-  // Wait two frames so we always target the freshly rendered cell.
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       normalizePastCells();
@@ -109,7 +111,5 @@ calendarReset?.addEventListener("click", () => focusSelectedDay());
 calendarGrid?.addEventListener("click", (event) => {
   const day = event.target.closest("button[data-calendar-date]");
   if (!day || day.disabled) return;
-
-  // Even when clicking the already-selected day, give visible feedback.
   focusSelectedDay();
 });
