@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Công cụ cá nhân giúp tính điểm chuyên cần và kiểm tra ngày dự định nghỉ có vượt mốc báo trước hay không." />
+  <meta name="description" content="Công cụ cá nhân giúp tính điểm chuyên cần và xem nhanh ngày nghỉ an toàn trên lịch." />
   <meta name="theme-color" content="#0f172a" />
   <title>Tính Chuyên Cần</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -17,7 +17,7 @@
 <body class="min-h-screen bg-slate-50 font-sans text-slate-900 antialiased selection:bg-blue-100 selection:text-blue-950">
   <header class="relative overflow-hidden bg-slate-950 text-white">
     <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.22),transparent_34%),radial-gradient(circle_at_85%_10%,rgba(16,185,129,0.14),transparent_28%)]"></div>
-    <div class="relative mx-auto max-w-6xl px-4 pb-24 pt-5 sm:px-6 lg:px-8 lg:pb-28">
+    <div class="relative mx-auto max-w-6xl px-4 pb-20 pt-5 sm:px-6 lg:px-8">
       <nav class="flex items-center justify-between gap-4">
         <div class="flex items-center gap-3">
           <div class="flex size-10 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15 backdrop-blur">
@@ -28,11 +28,11 @@
         <div class="hidden items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-slate-300 backdrop-blur sm:flex"><span class="size-1.5 rounded-full bg-emerald-400"></span>Dữ liệu chỉ lưu trên thiết bị</div>
       </nav>
 
-      <div class="mt-14 grid items-end gap-10 lg:grid-cols-[1.3fr_.7fr]">
+      <div class="mt-12 grid items-end gap-8 lg:grid-cols-[1.3fr_.7fr]">
         <section class="max-w-3xl">
-          <div class="inline-flex items-center gap-2 rounded-full border border-blue-400/20 bg-blue-400/10 px-3 py-1.5 text-xs font-semibold text-blue-200"><span class="size-1.5 rounded-full bg-blue-300"></span>Kiểm tra nhanh trước khi nghỉ</div>
-          <h1 class="mt-5 text-4xl font-extrabold tracking-[-0.04em] text-white sm:text-5xl lg:text-6xl">Ngày định nghỉ có bị<br class="hidden sm:block" /> trừ điểm chuyên cần?</h1>
-          <p class="mt-5 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">Chọn ngày muốn nghỉ. <strong class="font-semibold text-white">Mốc tính mặc định là hôm nay</strong>, nhưng có thể chỉnh để mô phỏng bất kỳ ngày nào.</p>
+          <div class="inline-flex items-center gap-2 rounded-full border border-blue-400/20 bg-blue-400/10 px-3 py-1.5 text-xs font-semibold text-blue-200"><span class="size-1.5 rounded-full bg-blue-300"></span>Chọn ngày trực tiếp trên lịch</div>
+          <h1 class="mt-5 text-4xl font-extrabold tracking-[-0.04em] text-white sm:text-5xl lg:text-6xl">Ngày nào nghỉ<br class="hidden sm:block" /> mà không bị trừ điểm?</h1>
+          <p class="mt-5 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">Lịch bên dưới tự tô <strong class="font-semibold text-emerald-300">xanh = an toàn</strong>, cam/đỏ = có nguy cơ bị trừ điểm. Chỉ cần bấm vào ngày muốn nghỉ.</p>
         </section>
 
         <aside class="rounded-3xl border border-white/10 bg-white/[0.07] p-5 shadow-2xl shadow-black/10 backdrop-blur-xl sm:p-6" aria-label="Tóm tắt điểm hiện tại">
@@ -47,55 +47,47 @@
     </div>
   </header>
 
-  <main class="relative mx-auto -mt-14 max-w-6xl px-4 pb-14 sm:px-6 lg:px-8">
-    <section class="grid items-start gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-      <div class="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xl shadow-slate-200/40 sm:p-7">
-        <div class="flex items-start justify-between gap-4">
-          <div><p class="text-xs font-bold uppercase tracking-[0.16em] text-blue-600">Thiết lập</p><h2 class="mt-2 text-2xl font-bold tracking-tight text-slate-950">Bạn định nghỉ khi nào?</h2><p class="mt-1 text-sm leading-6 text-slate-500">Thay đổi thông tin bên dưới, kết quả được tính ngay.</p></div>
-          <div class="hidden size-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 sm:flex"><svg viewBox="0 0 24 24" fill="none" class="size-5" aria-hidden="true"><path d="M12 8v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        </div>
+  <main class="relative mx-auto -mt-10 max-w-6xl px-4 pb-14 sm:px-6 lg:px-8">
+    <form id="calculator-form" class="rounded-3xl border border-slate-200/80 bg-white p-4 shadow-xl shadow-slate-200/40 sm:p-5">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-end">
+        <label class="min-w-0 flex-1">
+          <span class="mb-2 flex items-center justify-between gap-2 text-xs font-bold uppercase tracking-[0.12em] text-slate-500">Mốc tính<button type="button" id="reference-today-btn" class="normal-case tracking-normal text-blue-600 hover:text-blue-700">Hôm nay</button></span>
+          <input id="request-date" type="date" required class="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-950 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10" />
+        </label>
 
-        <form id="calculator-form" class="mt-6 space-y-5">
-          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-            <div class="flex items-start gap-3">
-              <div class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white text-slate-600 shadow-sm ring-1 ring-slate-200"><svg viewBox="0 0 24 24" fill="none" class="size-4" aria-hidden="true"><path d="M8 2v3M16 2v3M3.5 9.5h17M5 4.5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-12a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
-              <div class="min-w-0 flex-1">
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                  <div><label for="request-date" class="block text-sm font-bold text-slate-900">Mốc tính</label><p class="mt-0.5 text-xs leading-5 text-slate-500">Mặc định là hôm nay, vẫn có thể chỉnh để mô phỏng.</p></div>
-                  <button type="button" id="reference-today-btn" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900">Đặt về hôm nay</button>
-                </div>
-                <input id="request-date" type="date" required class="mt-3 h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-950 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" />
-                <p class="mt-2 text-[11px] leading-4 text-slate-400">Ngày này là điểm bắt đầu để tính số ngày báo trước.</p>
-              </div>
-            </div>
+        <label class="w-full lg:w-36">
+          <span class="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-slate-500">Điểm hiện tại</span>
+          <div class="relative"><input id="current-points" type="number" min="0" max="100" step="1" value="96" required class="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 pr-11 text-sm font-bold text-slate-950 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10" /><span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-semibold text-slate-400">/100</span></div>
+        </label>
+
+        <label class="min-w-0 flex-1">
+          <span class="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-slate-500">Tình huống</span>
+          <select id="event-type" class="h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"><option value="leave">Nghỉ 1 ngày</option><option value="leave-multi">Nghỉ nhiều ngày</option><option value="half">Nghỉ 1/2 ngày</option><option value="late">Đi trễ</option><option value="early">Về sớm</option></select>
+          <span id="policy-hint" class="mt-1.5 block text-[11px] leading-4 text-slate-400">Nghỉ 1 ngày cần báo trước ít nhất 1 tuần</span>
+        </label>
+
+        <label class="min-w-0 flex-1">
+          <span class="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-violet-600">Ngày đang chọn</span>
+          <input id="start-date" type="date" required class="h-11 w-full rounded-xl border border-violet-200 bg-violet-50/60 px-3 text-sm font-bold text-violet-950 outline-none transition focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-500/10" />
+        </label>
+
+        <details class="group lg:self-end">
+          <summary class="flex h-11 cursor-pointer list-none items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-600 transition hover:bg-slate-50 hover:text-slate-950 marker:hidden">Chi tiết<svg viewBox="0 0 24 24" fill="none" class="size-4 transition group-open:rotate-180"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+          <div class="mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 lg:absolute lg:right-8 lg:z-30 lg:w-[420px] lg:shadow-xl">
+            <div id="quick-date-buttons" class="flex flex-wrap gap-2"><button type="button" data-offset="1" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:border-slate-300">Ngày mai</button><button type="button" data-offset="2" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:border-slate-300">+2 ngày</button><button type="button" data-offset="7" class="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:border-slate-300">+7 ngày</button></div>
+            <div id="end-field" class="mt-4" hidden><label for="end-date" class="mb-2 block text-xs font-bold uppercase tracking-[0.12em] text-slate-500">Nghỉ đến ngày</label><input id="end-date" type="date" class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-bold text-slate-950 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" /></div>
+            <label class="mt-4 flex cursor-pointer items-start gap-3 rounded-xl bg-white p-3 ring-1 ring-slate-200"><input id="no-contact" type="checkbox" class="mt-0.5 size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" /><span><span class="block text-sm font-semibold text-slate-800">Không báo trước</span><span class="mt-1 block text-xs leading-5 text-slate-500">Mô phỏng trường hợp hoàn toàn không báo.</span></span></label>
+            <div class="mt-4 flex justify-end"><button type="button" id="reset-btn" class="rounded-xl px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-white hover:text-slate-900">Khôi phục mặc định</button></div>
           </div>
-
-          <div class="grid gap-5 sm:grid-cols-2">
-            <label class="block"><span class="mb-2 block text-sm font-semibold text-slate-700">Điểm hiện tại</span><div class="relative"><input id="current-points" type="number" min="0" max="100" step="1" value="96" required class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 pr-14 text-base font-semibold text-slate-950 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" /><span class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-sm font-medium text-slate-400">/100</span></div></label>
-            <label class="block"><span class="mb-2 block text-sm font-semibold text-slate-700">Tình huống</span><select id="event-type" class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"><option value="leave">Nghỉ 1 ngày</option><option value="leave-multi">Nghỉ nhiều ngày</option><option value="half">Nghỉ 1/2 ngày</option><option value="late">Đi trễ</option><option value="early">Về sớm</option></select><span id="policy-hint" class="mt-2 block text-xs leading-5 text-slate-500">Nghỉ 1 ngày cần báo trước ít nhất 1 tuần</span></label>
-          </div>
-
-          <div class="rounded-2xl border border-blue-100 bg-blue-50/70 p-4 sm:p-5">
-            <div class="flex items-center justify-between gap-3"><div><label for="start-date" class="block text-sm font-bold text-slate-900">Ngày muốn nghỉ</label><p class="mt-1 text-xs text-slate-500">Chọn ngày dự định phát sinh.</p></div><span class="rounded-full bg-white px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-blue-600 shadow-sm ring-1 ring-blue-100">Quan trọng</span></div>
-            <input id="start-date" type="date" required class="mt-4 h-12 w-full rounded-2xl border border-blue-200 bg-white px-4 text-base font-bold text-slate-950 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" />
-            <div id="quick-date-buttons" class="mt-3 flex flex-wrap gap-2"><button type="button" data-offset="1" class="rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-50">Ngày mai</button><button type="button" data-offset="2" class="rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-50">+2 ngày</button><button type="button" data-offset="7" class="rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-50">+7 ngày</button></div>
-          </div>
-
-          <div id="end-field" hidden><label for="end-date" class="mb-2 block text-sm font-semibold text-slate-700">Nghỉ đến ngày nào?</label><input id="end-date" type="date" class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-950 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" /><p class="mt-2 text-xs leading-5 text-slate-500">Mốc báo trước tự thay đổi theo tổng số ngày nghỉ.</p></div>
-
-          <details class="group rounded-2xl border border-slate-200 bg-white open:bg-slate-50/70"><summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 text-sm font-semibold text-slate-700 marker:hidden">Tùy chọn khác<svg viewBox="0 0 24 24" fill="none" class="size-4 text-slate-400 transition group-open:rotate-180" aria-hidden="true"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary><div class="border-t border-slate-200 px-4 py-4"><label class="flex cursor-pointer items-start gap-3"><input id="no-contact" type="checkbox" class="mt-0.5 size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" /><span><span class="block text-sm font-semibold text-slate-800">Mô phỏng trường hợp không báo trước</span><span class="mt-1 block text-xs leading-5 text-slate-500">Chỉ bật nếu muốn xem mức trừ khi hoàn toàn không báo.</span></span></label></div></details>
-
-          <div class="flex items-center justify-between gap-3 border-t border-slate-100 pt-5"><p class="text-xs leading-5 text-slate-400">Kết quả cập nhật tự động.</p><button type="button" id="reset-btn" class="rounded-xl px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800">Khôi phục mặc định</button></div>
-        </form>
+        </details>
       </div>
-
-      <div id="result" class="min-h-[420px] rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xl shadow-slate-200/40 sm:p-7 lg:sticky lg:top-6" aria-live="polite"></div>
-    </section>
+      <p class="mt-3 text-xs text-slate-400">Lịch là nơi chọn ngày chính. Thanh này chỉ giữ các thông số ảnh hưởng đến cách tính.</p>
+    </form>
 
     <section class="mt-6 overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm">
       <div class="border-b border-slate-100 px-5 py-5 sm:px-7">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div><p class="text-xs font-bold uppercase tracking-[0.16em] text-violet-600">Calendar overview</p><h2 class="mt-2 text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">Tổng quan theo lịch</h2><p class="mt-1 text-sm leading-6 text-slate-500">Nhìn nhanh mốc tính, hạn chót và khoảng nghỉ trên cùng một lịch.</p></div>
+          <div><p class="text-xs font-bold uppercase tracking-[0.16em] text-violet-600">Calendar overview</p><h2 class="mt-2 text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">Chọn ngày nghỉ trên lịch</h2><p class="mt-1 text-sm leading-6 text-slate-500">Ngày trước mốc tính được làm mờ; từ mốc tính trở đi, màu nền cho biết mức an toàn.</p></div>
           <div class="flex items-center gap-2">
             <button type="button" id="calendar-prev" aria-label="Tháng trước" class="flex size-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 hover:text-slate-950"><svg viewBox="0 0 24 24" fill="none" class="size-4"><path d="m15 18-6-6 6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
             <div id="calendar-title" class="min-w-36 text-center text-sm font-bold capitalize text-slate-900">—</div>
@@ -106,29 +98,28 @@
         <div id="calendar-meta" class="mt-4 flex flex-wrap gap-2"></div>
       </div>
 
-      <div class="px-3 pb-5 pt-4 sm:px-7 sm:pb-7">
-        <div class="mb-3 grid grid-cols-7 gap-1 text-center text-[10px] font-bold uppercase tracking-wide text-slate-400 sm:gap-2 sm:text-xs"><div>T2</div><div>T3</div><div>T4</div><div>T5</div><div>T6</div><div>T7</div><div>CN</div></div>
-        <div id="calendar-grid" class="grid grid-cols-7 gap-1 sm:gap-2"></div>
-        <div class="mt-5 flex flex-wrap gap-x-5 gap-y-2 border-t border-slate-100 pt-4 text-xs text-slate-500">
-          <span class="inline-flex items-center gap-2"><span class="size-2.5 rounded-full bg-blue-500"></span>Mốc tính</span>
-          <span class="inline-flex items-center gap-2"><span class="size-2.5 rounded-full bg-amber-500"></span>Hạn chót</span>
-          <span class="inline-flex items-center gap-2"><span class="size-2.5 rounded-full bg-violet-500"></span>Ngày nghỉ</span>
-          <span class="inline-flex items-center gap-2"><span class="size-2.5 rounded-full border-2 border-slate-400 bg-white"></span>Hôm nay</span>
+      <div class="px-3 py-4 sm:px-6 sm:py-6">
+        <div class="grid grid-cols-7 gap-1.5 pb-2 text-center text-[11px] font-bold uppercase tracking-wide text-slate-400 sm:gap-2"><div>T2</div><div>T3</div><div>T4</div><div>T5</div><div>T6</div><div>T7</div><div>CN</div></div>
+        <div id="calendar-grid" class="grid grid-cols-7 gap-1.5 sm:gap-2"></div>
+        <div class="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-100 pt-4 text-xs text-slate-500"><span class="flex items-center gap-2"><i class="size-2.5 rounded-full bg-emerald-400"></i>An toàn</span><span class="flex items-center gap-2"><i class="size-2.5 rounded-full bg-amber-400"></i>Cảnh báo -1</span><span class="flex items-center gap-2"><i class="size-2.5 rounded-full bg-rose-400"></i>Vi phạm -2</span><span class="flex items-center gap-2"><i class="size-2.5 rounded-full bg-slate-300"></i>Đã qua</span><span class="flex items-center gap-2"><i class="size-2.5 rounded-full bg-blue-500"></i>Mốc tính</span><span class="flex items-center gap-2"><i class="size-2.5 rounded-full bg-violet-500"></i>Ngày nghỉ</span></div>
+      </div>
+    </section>
+
+    <section class="mt-6 grid gap-6 lg:grid-cols-[1.15fr_.85fr]">
+      <div id="result" class="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-7" aria-live="polite"></div>
+      <aside class="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-6">
+        <p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Mốc cần nhớ</p>
+        <h2 class="mt-2 text-xl font-bold tracking-tight text-slate-950">Quy tắc báo trước</h2>
+        <div class="mt-5 space-y-3 text-sm">
+          <div class="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3"><span class="text-slate-600">Trễ / về sớm / nửa ngày</span><strong>≥ 2 ngày</strong></div>
+          <div class="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3"><span class="text-slate-600">Nghỉ 1–6 ngày</span><strong>≥ 1 tuần</strong></div>
+          <div class="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3"><span class="text-slate-600">Nghỉ 7–29 ngày</span><strong>≥ 1 tháng</strong></div>
+          <div class="flex items-center justify-between rounded-2xl bg-slate-50 px-4 py-3"><span class="text-slate-600">Nghỉ từ 30 ngày</span><strong>≥ 2 tháng</strong></div>
         </div>
-      </div>
+      </aside>
     </section>
 
-    <section class="mt-6 rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-7">
-      <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Mốc cần nhớ</p><h2 class="mt-2 text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">Tóm tắt cách tính</h2></div><p class="max-w-xl text-sm leading-6 text-slate-500">Công cụ tự tham khảo theo bộ quy tắc đã cấu hình. Không gửi dữ liệu hoặc yêu cầu tới bên nào.</p></div>
-      <div class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4"><div class="text-xs font-semibold text-slate-400">Đi trễ / về sớm / 1/2 ngày</div><div class="mt-2 text-lg font-bold text-slate-900">≥ 2 ngày trước</div></div>
-        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4"><div class="text-xs font-semibold text-slate-400">Nghỉ 1–6 ngày</div><div class="mt-2 text-lg font-bold text-slate-900">≥ 1 tuần trước</div></div>
-        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4"><div class="text-xs font-semibold text-slate-400">Nghỉ 7–29 ngày</div><div class="mt-2 text-lg font-bold text-slate-900">≥ 1 tháng trước</div></div>
-        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4"><div class="text-xs font-semibold text-slate-400">Nghỉ từ 30 ngày</div><div class="mt-2 text-lg font-bold text-slate-900">≥ 2 tháng trước</div></div>
-      </div>
-    </section>
-
-    <footer class="px-1 pb-4 pt-6 text-xs leading-5 text-slate-400">Công cụ dùng ngày lịch. Kết quả chỉ để tự tham khảo theo bộ quy tắc đã cấu hình; dữ liệu được xử lý trong trình duyệt.</footer>
+    <footer class="mt-6 flex flex-col gap-3 rounded-2xl border border-slate-200/70 bg-white/70 px-5 py-4 text-xs leading-5 text-slate-500 sm:flex-row sm:items-center sm:justify-between"><span>Công cụ dùng ngày lịch; kết quả chỉ để tự tham khảo theo bộ quy tắc đã cấu hình.</span><span class="shrink-0 font-medium text-slate-400">Local-only · No backend</span></footer>
   </main>
 
   <script type="module" src="./src/app.js"></script>
