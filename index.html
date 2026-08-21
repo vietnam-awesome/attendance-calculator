@@ -98,7 +98,7 @@
               <button type="button" id="calendar-prev" aria-label="Tháng trước" class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"><svg viewBox="0 0 20 20" fill="none" class="size-3.5"><path d="m12.5 15-5-5 5-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
               <div id="calendar-title" class="min-w-32 text-center text-xs font-bold capitalize text-slate-800">—</div>
               <button type="button" id="calendar-next" aria-label="Tháng sau" class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"><svg viewBox="0 0 20 20" fill="none" class="size-3.5"><path d="m7.5 15 5-5-5-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-              <button type="button" id="calendar-reset" class="ml-1 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-[10px] font-semibold text-slate-500 transition hover:bg-slate-50 hover:text-slate-900">Ngày đã chọn</button>
+              <button type="button" id="calendar-reset" title="Quay về và làm nổi bật ngày nghỉ đang chọn" class="ml-1 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-[10px] font-semibold text-slate-500 transition hover:bg-slate-50 hover:text-slate-900">Về ngày đã chọn</button>
             </div>
           </div>
           <div id="calendar-meta" class="mt-2.5 flex flex-wrap gap-1.5"></div>
@@ -127,5 +127,6 @@
   </main>
 
   <script type="module" src="./src/app.js"></script>
+  <script type="module" src="./src/calendar-focus.js"></script>
 </body>
 </html>
