@@ -13,14 +13,14 @@
     <div class="shell hero-grid">
       <section class="hero-main">
         <p class="eyebrow">Attendance · Chuyên cần</p>
-        <h1>Ngày định nghỉ có làm mất điểm chuyên cần không?</h1>
+        <h1>Ngày mai nghỉ có bị trừ điểm không?</h1>
         <p class="hero-copy">
-          Nhập ngày dự định nghỉ và ngày bạn gửi yêu cầu. Công cụ sẽ tính hạn báo trước,
-          mức trừ điểm dự kiến và điểm chuyên cần còn lại sau tình huống đó.
+          Chỉ cần chọn <strong>ngày muốn nghỉ</strong>. Hệ thống tự lấy hôm nay làm ngày gửi yêu cầu,
+          rồi tính hạn báo trước và điểm chuyên cần còn lại.
         </p>
         <div class="hero-note">
           <span>ℹ️</span>
-          <div><strong>Mặc định hiện tại: 96/100 điểm.</strong> Bạn có thể chỉnh lại khi điểm thực tế thay đổi.</div>
+          <div><strong>Điểm hiện tại mặc định: 96/100.</strong> Không cần nhập “ngày submit form” nữa.</div>
         </div>
       </section>
 
@@ -46,61 +46,60 @@
 
   <main class="shell">
     <section class="main-grid">
-      <div class="panel">
-        <p class="eyebrow">Bước 1</p>
-        <h2>Thông tin dự định</h2>
-        <p class="panel-subtitle">Ngày xin mặc định là hôm nay. Với nghỉ nhiều ngày, hệ thống tự chọn ngưỡng 1 tuần / 1 tháng theo độ dài kỳ nghỉ.</p>
+      <div class="panel simple-panel">
+        <p class="eyebrow">Kiểm tra nhanh</p>
+        <h2>Bạn định nghỉ khi nào?</h2>
+        <div class="today-banner">
+          <span>Hôm nay</span>
+          <strong id="today-label">—</strong>
+          <small>Được dùng tự động làm ngày gửi yêu cầu</small>
+        </div>
 
         <form id="calculator-form">
-          <div class="form-grid">
+          <div class="form-grid simple-form-grid">
             <div class="field">
               <label for="current-points">Điểm chuyên cần hiện tại</label>
               <input id="current-points" type="number" min="0" max="100" step="1" value="96" required />
-              <small>Đầu mỗi kỳ đánh giá reset về 100 điểm.</small>
             </div>
 
             <div class="field">
-              <label for="event-type">Loại tình huống</label>
+              <label for="event-type">Bạn muốn xin gì?</label>
               <select id="event-type">
-                <option value="leave">Nghỉ từ 1 ngày trở lên</option>
+                <option value="leave">Nghỉ 1 ngày</option>
+                <option value="leave-multi">Nghỉ nhiều ngày</option>
                 <option value="half">Nghỉ 1/2 ngày</option>
                 <option value="late">Đi trễ</option>
                 <option value="early">Về sớm</option>
               </select>
-              <small id="policy-hint">Tự xác định theo độ dài kỳ nghỉ</small>
+              <small id="policy-hint">Nghỉ 1 ngày cần báo trước ít nhất 1 tuần</small>
             </div>
 
-            <div class="field">
-              <label for="request-date">Ngày gửi yêu cầu / submit form</label>
-              <input id="request-date" type="date" required />
-              <small>Đây là ngày được dùng để xét thời hạn thông báo.</small>
-            </div>
-
-            <div class="field">
-              <label for="start-date">Ngày bắt đầu nghỉ / phát sinh</label>
+            <div class="field full featured-field">
+              <label for="start-date">Ngày muốn nghỉ</label>
               <input id="start-date" type="date" required />
+              <small id="date-help">Ví dụ: muốn nghỉ ngày mai thì chỉ chọn ngày mai ở đây.</small>
             </div>
 
-            <div class="field full" id="end-field">
-              <label for="end-date">Ngày kết thúc nghỉ</label>
-              <input id="end-date" type="date" required />
-              <small>1–6 ngày: xin trước 1 tuần · 7–29 ngày: xin trước 1 tháng · từ 30 ngày: xin trước 2 tháng.</small>
-            </div>
-
-            <div class="field full">
-              <div class="checkbox-row">
-                <input id="no-contact" type="checkbox" />
-                <label for="no-contact">
-                  <strong>Không liên lạc / không thông báo.</strong><br />
-                  Chọn mục này nếu muốn mô phỏng trường hợp không báo trước. Quy định áp dụng mức 2 điểm.
-                </label>
-              </div>
+            <div class="field full" id="end-field" hidden>
+              <label for="end-date">Nghỉ đến ngày nào?</label>
+              <input id="end-date" type="date" />
+              <small>Hệ thống tự chọn mốc báo trước 1 tuần / 1 tháng / 2 tháng theo số ngày nghỉ.</small>
             </div>
           </div>
 
-          <div class="form-actions">
-            <button class="primary-btn" type="submit">Tính chuyên cần</button>
-            <button class="ghost-btn" type="button" id="reset-btn">Đặt lại về 96 điểm</button>
+          <details class="advanced-options">
+            <summary>Tùy chọn khác</summary>
+            <div class="checkbox-row">
+              <input id="no-contact" type="checkbox" />
+              <label for="no-contact">
+                <strong>Không báo / không liên lạc.</strong><br />
+                Chỉ bật khi muốn mô phỏng trường hợp hoàn toàn không thông báo trước.
+              </label>
+            </div>
+          </details>
+
+          <div class="form-actions compact-actions">
+            <button class="ghost-btn" type="button" id="reset-btn">Đặt lại 96 điểm &amp; nghỉ ngày mai</button>
           </div>
         </form>
       </div>
@@ -134,14 +133,14 @@
             <tr>
               <td>Nghỉ 1–6 ngày</td>
               <td><span class="badge safe">≥ 1 tuần trước</span></td>
-              <td>1 ngày nghỉ: có thể <strong>-1/-2</strong>; nghỉ >1 ngày sai quy định: <strong>-2</strong></td>
-              <td>Ngày submit form được xem là ngày xin nghỉ.</td>
+              <td>1 ngày nghỉ: có thể <strong>-1/-2</strong>; nghỉ &gt;1 ngày sai quy định: <strong>-2</strong></td>
+              <td>Hệ thống tự lấy ngày hiện tại làm ngày gửi yêu cầu.</td>
             </tr>
             <tr>
               <td>Nghỉ 7–29 ngày</td>
               <td><span class="badge safe">≥ 1 tháng trước</span></td>
               <td><strong>-2</strong> nếu không đủ thời hạn</td>
-              <td>Vắng mặt tổng thời gian >1 ngày không đúng quy định thuộc mức 2 điểm.</td>
+              <td>Vắng mặt tổng thời gian &gt;1 ngày không đúng quy định thuộc mức 2 điểm.</td>
             </tr>
             <tr>
               <td>Nghỉ từ 30 ngày</td>
