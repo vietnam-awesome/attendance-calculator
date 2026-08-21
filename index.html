@@ -55,25 +55,27 @@
 
   <main class="mx-auto max-w-7xl px-4 pb-8 sm:px-6 lg:px-8">
     <section class="relative z-10 -mt-4 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-[0_14px_40px_rgba(15,23,42,.07)] sm:p-3.5">
-      <form id="calculator-form" class="grid items-end gap-3 sm:grid-cols-2 xl:grid-cols-[1.1fr_.7fr_1.05fr_1fr_auto]">
+      <form id="calculator-form" class="grid items-end gap-3 sm:grid-cols-2 xl:grid-cols-[1.05fr_.7fr_1.15fr_1fr_auto]">
         <label class="block min-w-0">
-          <span class="mb-1.5 flex items-center justify-between text-[10px] font-bold uppercase tracking-[.12em] text-slate-400"><span>Mốc tính</span><button type="button" id="reference-today-btn" class="normal-case tracking-normal text-blue-600 hover:text-blue-700">Hôm nay</button></span>
+          <span class="mb-1.5 flex min-h-[18px] items-center justify-between text-[10px] font-bold uppercase tracking-[.12em] text-slate-400"><span>Mốc tính</span><button type="button" id="reference-today-btn" class="normal-case tracking-normal text-blue-600 hover:text-blue-700">Hôm nay</button></span>
           <input id="request-date" type="date" required class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10" />
         </label>
 
         <label class="block min-w-0">
-          <span class="mb-1.5 block text-[10px] font-bold uppercase tracking-[.12em] text-slate-400">Điểm hiện tại</span>
+          <span class="mb-1.5 flex min-h-[18px] items-center text-[10px] font-bold uppercase tracking-[.12em] text-slate-400">Điểm hiện tại</span>
           <div class="relative"><input id="current-points" type="number" min="0" max="100" step="1" value="96" required class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 pr-12 text-sm font-bold text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10" /><span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-[11px] font-semibold text-slate-400">/100</span></div>
         </label>
 
         <label class="block min-w-0">
-          <span class="mb-1.5 block text-[10px] font-bold uppercase tracking-[.12em] text-slate-400">Tình huống</span>
+          <span class="mb-1.5 flex min-h-[18px] items-center justify-between gap-2 text-[10px] font-bold uppercase tracking-[.12em] text-slate-400">
+            <span class="shrink-0">Tình huống</span>
+            <span id="policy-hint" class="min-w-0 max-w-[68%] truncate rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[9px] font-semibold normal-case tracking-normal text-slate-500" title="Nghỉ 1 ngày: báo trước ít nhất 1 tuần">≥ 1 tuần</span>
+          </span>
           <select id="event-type" class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10"><option value="leave">Nghỉ 1 ngày</option><option value="leave-multi">Nghỉ nhiều ngày</option><option value="half">Nghỉ 1/2 ngày</option><option value="late">Đi trễ</option><option value="early">Về sớm</option></select>
-          <span id="policy-hint" class="mt-1 block truncate text-[10px] text-slate-400">Nghỉ 1 ngày cần báo trước ít nhất 1 tuần</span>
         </label>
 
         <label class="block min-w-0">
-          <span class="mb-1.5 block text-[10px] font-bold uppercase tracking-[.12em] text-violet-500">Ngày đang chọn</span>
+          <span class="mb-1.5 flex min-h-[18px] items-center text-[10px] font-bold uppercase tracking-[.12em] text-violet-500">Ngày đang chọn</span>
           <input id="start-date" type="date" required class="h-10 w-full rounded-xl border border-violet-200 bg-violet-50/60 px-3 text-sm font-bold text-violet-950 outline-none transition focus:border-violet-500 focus:bg-white focus:ring-4 focus:ring-violet-500/10" />
         </label>
 
