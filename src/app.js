@@ -25,7 +25,6 @@ const currentLevelEl = $("#current-level");
 const policyHint = $("#policy-hint");
 const todayLabel = $("#today-label");
 
-// Bump the storage key so the old, confusing request-date state is discarded.
 const STORAGE_KEY = "attendance-calculator-v2";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -141,15 +140,15 @@ function renderResult(data, requestDate, startDate) {
 
   const statusTitle = isSafe
     ? "Không bị trừ điểm"
-    : `Nếu gửi hôm nay: dự kiến -${data.deduction} điểm`;
+    : `Tính từ hôm nay: dự kiến -${data.deduction} điểm`;
 
   const scenarioText = noContactInput.checked
-    ? `Ngày dự định: ${formatDateVN(startDate)} · mô phỏng không thông báo`
+    ? `Ngày dự định: ${formatDateVN(startDate)} · mô phỏng không báo trước`
     : `Hôm nay ${formatDateVN(requestDate)} → nghỉ ${formatDateVN(startDate)} → báo trước ${Math.max(0, noticeDays)} ngày`;
 
   const timingMessage = data.timely
-    ? `Bạn vẫn còn trong hạn. Hạn chót là ${formatDateVN(data.deadline)}.`
-    : `Bạn cần xin chậm nhất ${formatDateVN(data.deadline)}. Nếu gửi hôm nay thì đã trễ hạn ${lateBy} ngày.`;
+    ? `Theo mốc hiện tại, bạn vẫn còn trong hạn. Hạn chót là ${formatDateVN(data.deadline)}.`
+    : `Mốc báo trước chậm nhất là ${formatDateVN(data.deadline)}. Tính từ hôm nay thì đã trễ ${lateBy} ngày.`;
 
   const thresholdNote = levelChanged
     ? `<div class="alert danger"><strong>Cảnh báo:</strong> Điểm dự kiến chuyển từ ${data.currentLevel.name} sang ${data.projectedLevel.name}.</div>`
@@ -171,7 +170,7 @@ function renderResult(data, requestDate, startDate) {
 
     <div class="metrics-grid simplified-metrics">
       <div class="metric">
-        <span>Quy định</span>
+        <span>Quy tắc</span>
         <strong>${data.rule.noticeLabel}</strong>
         <small>${data.rule.label}</small>
       </div>
