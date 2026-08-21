@@ -155,7 +155,7 @@ export function getViolationLevel(points) {
       level: 0,
       name: "Chưa hình thành mức vi phạm",
       range: "89–100",
-      discipline: "Chưa rơi vào Mức 1–5",
+      description: "Chưa chạm Mức 1–5",
     };
   }
   if (points >= 77) {
@@ -163,7 +163,7 @@ export function getViolationLevel(points) {
       level: 1,
       name: "Mức 1",
       range: "77–88",
-      discipline: "Nhắc nhở; vẫn được đánh giá",
+      description: "Thuộc vùng điểm Mức 1",
     };
   }
   if (points >= 65) {
@@ -171,7 +171,7 @@ export function getViolationLevel(points) {
       level: 2,
       name: "Mức 2",
       range: "65–76",
-      discipline: "Không đánh giá / kéo dài thời hạn tăng lương",
+      description: "Thuộc vùng điểm Mức 2",
     };
   }
   if (points >= 53) {
@@ -179,7 +179,7 @@ export function getViolationLevel(points) {
       level: 3,
       name: "Mức 3",
       range: "53–64",
-      discipline: "Không đánh giá + biên bản cảnh cáo lần 1",
+      description: "Thuộc vùng điểm Mức 3",
     };
   }
   if (points >= 41) {
@@ -187,14 +187,14 @@ export function getViolationLevel(points) {
       level: 4,
       name: "Mức 4",
       range: "41–52",
-      discipline: "Không đánh giá + biên bản cảnh cáo lần 2",
+      description: "Thuộc vùng điểm Mức 4",
     };
   }
   return {
     level: 5,
     name: "Mức 5",
     range: "≤ 40",
-    discipline: "Công ty có quyền xem xét chấm dứt hợp đồng lao động",
+    description: "Thuộc vùng điểm Mức 5",
   };
 }
 
@@ -235,7 +235,7 @@ export function evaluateAttendance({
     return { valid: false, error: "Điểm hiện tại phải nằm trong khoảng 0–100." };
   }
   if (!requestDate || !startDate) {
-    return { valid: false, error: "Vui lòng nhập ngày xin và ngày bắt đầu." };
+    return { valid: false, error: "Vui lòng chọn ngày bắt đầu." };
   }
   if (type === "leave" && (!endDate || endDate < startDate)) {
     return { valid: false, error: "Ngày kết thúc phải bằng hoặc sau ngày bắt đầu." };
@@ -247,7 +247,7 @@ export function evaluateAttendance({
   const deadline = getNoticeDeadline(startDate, rule.notice);
   const timely = !noContact && requestDate <= deadline;
   let deduction = 0;
-  let reason = "Đã đáp ứng thời hạn thông báo theo quy định.";
+  let reason = "Đủ thời gian báo trước theo quy tắc đang dùng.";
 
   if (!timely) {
     const sameDayOrLater = requestDate >= startDate;
@@ -255,16 +255,16 @@ export function evaluateAttendance({
 
     if (noContact) {
       deduction = 2;
-      reason = "Không liên lạc: áp dụng mức trừ 2 điểm.";
+      reason = "Không báo trước: dự kiến trừ 2 điểm.";
     } else if (sameDayOrLater) {
       deduction = 2;
-      reason = "Xin vào ngày phát sinh hoặc sau đó: áp dụng mức trừ 2 điểm.";
+      reason = "Đến ngày phát sinh hoặc sau đó mới báo: dự kiến trừ 2 điểm.";
     } else if (longAbsenceViolation) {
       deduction = 2;
-      reason = "Vắng mặt trên 1 ngày nhưng không đủ thời hạn báo trước: áp dụng mức trừ 2 điểm.";
+      reason = "Nghỉ trên 1 ngày nhưng không đủ thời gian báo trước: dự kiến trừ 2 điểm.";
     } else {
       deduction = 1;
-      reason = "Có báo trước nhưng chưa đủ thời hạn quy định: áp dụng mức trừ 1 điểm.";
+      reason = "Có báo trước nhưng chưa đủ thời gian: dự kiến trừ 1 điểm.";
     }
   }
 
