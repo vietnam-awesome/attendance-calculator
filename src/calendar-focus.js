@@ -1,6 +1,39 @@
 const calendarReset = document.querySelector("#calendar-reset");
 const calendarGrid = document.querySelector("#calendar-grid");
 const startInput = document.querySelector("#start-date");
+const typeInput = document.querySelector("#event-type");
+const policyHint = document.querySelector("#policy-hint");
+
+const policyHints = {
+  leave: {
+    text: "≥ 1 tuần",
+    title: "Nghỉ 1 ngày: báo trước ít nhất 1 tuần",
+  },
+  "leave-multi": {
+    text: "Theo số ngày",
+    title: "Mốc báo trước tự xác định theo tổng số ngày nghỉ",
+  },
+  half: {
+    text: "≥ 2 ngày",
+    title: "Nghỉ nửa ngày: báo trước ít nhất 2 ngày",
+  },
+  late: {
+    text: "≥ 2 ngày",
+    title: "Đi trễ: báo trước ít nhất 2 ngày",
+  },
+  early: {
+    text: "≥ 2 ngày",
+    title: "Về sớm: báo trước ít nhất 2 ngày",
+  },
+};
+
+function syncPolicyHint() {
+  if (!policyHint || !typeInput) return;
+  const hint = policyHints[typeInput.value] || { text: "Quy tắc", title: "Quy tắc áp dụng" };
+  policyHint.textContent = hint.text;
+  policyHint.title = hint.title;
+  policyHint.setAttribute("aria-label", hint.title);
+}
 
 function focusSelectedDay({ scroll = false } = {}) {
   const value = startInput?.value;
@@ -31,6 +64,9 @@ function focusSelectedDay({ scroll = false } = {}) {
     });
   });
 }
+
+typeInput?.addEventListener("change", () => requestAnimationFrame(syncPolicyHint));
+syncPolicyHint();
 
 calendarReset?.addEventListener("click", () => focusSelectedDay());
 
