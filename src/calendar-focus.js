@@ -29,10 +29,27 @@ const policyHints = {
 
 function syncPolicyHint() {
   if (!policyHint || !typeInput) return;
-  const hint = policyHints[typeInput.value] || { text: "Quy tắc", title: "Quy tắc áp dụng" };
+  const hint = policyHints[typeInput.value] || {
+    text: "Quy tắc",
+    title: "Quy tắc áp dụng",
+  };
   policyHint.textContent = hint.text;
   policyHint.title = hint.title;
   policyHint.setAttribute("aria-label", hint.title);
+}
+
+function normalizePastCells() {
+  if (!calendarGrid) return;
+
+  calendarGrid
+    .querySelectorAll('button[disabled][title*="Đã qua"]')
+    .forEach((day) => {
+      // Past dates always win visually over deadline / selected-date markers.
+      // Keep the deadline in the summary chip, but do not highlight a past cell.
+      day.style.boxShadow = "none";
+      day.style.outline = "none";
+      day.querySelectorAll("i").forEach((marker) => marker.remove());
+    });
 }
 
 function focusSelectedDay({ scroll = false } = {}) {
@@ -43,6 +60,8 @@ function focusSelectedDay({ scroll = false } = {}) {
   // Wait two frames so we always target the freshly rendered cell.
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
+      normalizePastCells();
+
       const selected = calendarGrid.querySelector(
         `button[data-calendar-date="${CSS.escape(value)}"]`,
       );
@@ -51,9 +70,18 @@ function focusSelectedDay({ scroll = false } = {}) {
       selected.focus({ preventScroll: true });
       selected.animate(
         [
-          { transform: "scale(1)", boxShadow: "0 0 0 0 rgba(139,92,246,0)" },
-          { transform: "scale(1.025)", boxShadow: "0 0 0 5px rgba(139,92,246,.16)" },
-          { transform: "scale(1)", boxShadow: "0 0 0 0 rgba(139,92,246,0)" },
+          {
+            transform: "scale(1)",
+            boxShadow: "0 0 0 0 rgba(139,92,246,0)",
+          },
+          {
+            transform: "scale(1.025)",
+            boxShadow: "0 0 0 5px rgba(139,92,246,.16)",
+          },
+          {
+            transform: "scale(1)",
+            boxShadow: "0 0 0 0 rgba(139,92,246,0)",
+          },
         ],
         { duration: 620, easing: "ease-out" },
       );
@@ -65,8 +93,16 @@ function focusSelectedDay({ scroll = false } = {}) {
   });
 }
 
-typeInput?.addEventListener("change", () => requestAnimationFrame(syncPolicyHint));
+typeInput?.addEventListener("change", () =>
+  requestAnimationFrame(syncPolicyHint),
+);
 syncPolicyHint();
+
+if (calendarGrid) {
+  const observer = new MutationObserver(() => normalizePastCells());
+  observer.observe(calendarGrid, { childList: true, subtree: true });
+  normalizePastCells();
+}
 
 calendarReset?.addEventListener("click", () => focusSelectedDay());
 
