@@ -206,6 +206,13 @@ function toggleEndDate() {
   }
 }
 
+function levelTone(level) {
+  if (level === 0) return "border-emerald-400/20 bg-emerald-400/10 text-emerald-200";
+  if (level === 1) return "border-blue-400/20 bg-blue-400/10 text-blue-200";
+  if (level === 2) return "border-amber-400/20 bg-amber-400/10 text-amber-200";
+  return "border-rose-400/20 bg-rose-400/10 text-rose-200";
+}
+
 function renderTop(points, referenceDate) {
   const safePoints = Math.max(0, Math.min(100, Number(points) || 0));
   const level = getViolationLevel(safePoints);
@@ -215,14 +222,15 @@ function renderTop(points, referenceDate) {
   pointsBadge.textContent = safePoints;
   pointsBar.style.width = `${safePoints}%`;
   currentLevelEl.textContent = level.level ? level.name : "Chưa Mức 1";
+  currentLevelEl.className = `inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold ${levelTone(level.level)}`;
 }
 
 function renderError(message) {
   result.innerHTML = `
-    <div class="flex min-h-[360px] flex-col items-center justify-center text-center">
-      <div class="flex size-14 items-center justify-center rounded-2xl bg-rose-50 text-2xl font-black text-rose-600">!</div>
-      <h2 class="mt-4 text-xl font-bold">Chưa thể tính</h2>
-      <p class="mt-2 text-sm text-slate-500">${message}</p>
+    <div class="flex min-h-[220px] flex-col items-center justify-center text-center">
+      <div class="flex size-12 items-center justify-center rounded-2xl bg-rose-50 text-xl font-black text-rose-600">!</div>
+      <h2 class="mt-3 text-lg font-bold">Chưa thể tính</h2>
+      <p class="mt-1.5 text-xs leading-5 text-slate-500">${message}</p>
     </div>
   `;
 }
@@ -259,71 +267,60 @@ function renderResult(data, requestDate, startDate) {
         };
 
   const title = safe
-    ? "Ngày nghỉ đang an toàn"
-    : "Ngày nghỉ đang vi phạm mốc báo trước";
+    ? "Ngày này đang an toàn"
+    : data.deduction === 1
+      ? "Ngày này sẽ bị trừ 1 điểm"
+      : "Ngày này sẽ bị trừ 2 điểm";
 
   const timing = safe
-    ? `Ngày này nằm trong <strong>vùng an toàn</strong>. Mốc chậm nhất: <strong>${formatDateVN(data.deadline)}</strong>.`
-    : `Mốc chậm nhất: <strong>${formatDateVN(data.deadline)}</strong>. Mốc đã chọn trễ <strong>${lateBy} ngày</strong>.`;
+    ? `Đủ thời gian báo trước. Hạn chót: <strong>${formatDateVN(data.deadline)}</strong>.`
+    : `Hạn chót là <strong>${formatDateVN(data.deadline)}</strong>; mốc hiện tại đã chậm <strong>${lateBy} ngày</strong>.`;
 
   const suggestion =
     !safe && safeDate
       ? `
-        <div class="mt-5 flex flex-col gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div class="text-xs font-bold uppercase tracking-wide text-emerald-700">Gợi ý không vi phạm</div>
-            <div class="mt-1 text-sm font-bold text-emerald-950">Ngày an toàn gần nhất: ${formatDateVN(safeDate)}</div>
+        <div class="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+          <div class="flex items-center justify-between gap-3">
+            <div class="min-w-0">
+              <div class="text-[10px] font-bold uppercase tracking-wide text-emerald-700">Ngày an toàn gần nhất</div>
+              <div class="mt-1 truncate text-sm font-bold text-emerald-950">${formatDateVN(safeDate)}</div>
+            </div>
+            <button type="button" data-use-safe-date="${toISODate(safeDate)}" class="shrink-0 rounded-lg bg-emerald-600 px-2.5 py-2 text-[10px] font-bold text-white hover:bg-emerald-700">Chọn ngày này</button>
           </div>
-          <button type="button" data-use-safe-date="${toISODate(safeDate)}" class="rounded-xl bg-emerald-600 px-3 py-2 text-xs font-bold text-white hover:bg-emerald-700">
-            Chọn ngày này
-          </button>
         </div>
       `
       : "";
 
   result.innerHTML = `
-    <div class="flex items-start justify-between gap-4">
+    <div class="flex items-start justify-between gap-3">
+      <div class="min-w-0">
+        <p class="text-[10px] font-bold uppercase tracking-[.14em] text-slate-400">Kết quả dự kiến</p>
+        <h2 class="mt-1.5 text-xl font-bold leading-6 tracking-tight text-slate-950">${title}</h2>
+      </div>
+      <span class="shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ring-1 ring-inset ${tone.badge}">${safe ? "0 điểm" : `-${data.deduction} điểm`}</span>
+    </div>
+
+    <div class="mt-4 flex items-end justify-between rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-100">
       <div>
-        <p class="text-xs font-bold uppercase tracking-[.16em] text-slate-400">Kết quả dự kiến</p>
-        <h2 class="mt-2 text-2xl font-bold tracking-tight">${title}</h2>
+        <div class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">Điểm sau dự kiến</div>
+        <div class="mt-1 flex items-baseline gap-1"><strong class="text-4xl font-extrabold tracking-tight ${tone.score}">${data.projectedPoints}</strong><span class="text-xs font-semibold text-slate-400">/100</span></div>
       </div>
-      <span class="rounded-full px-3 py-1.5 text-xs font-bold ring-1 ring-inset ${tone.badge}">
-        ${safe ? "An toàn · 0 điểm" : `Dự kiến -${data.deduction} điểm`}
-      </span>
+      <div class="pb-1 text-right text-[10px] font-medium text-slate-400">${data.currentPoints} → ${data.projectedPoints}</div>
     </div>
 
-    <div class="mt-7 rounded-3xl border border-slate-100 bg-slate-50/70 p-6">
-      <div class="text-xs font-semibold uppercase tracking-wide text-slate-400">Điểm sau dự kiến</div>
-      <div class="mt-1 flex items-baseline gap-1">
-        <strong class="text-4xl font-extrabold ${tone.score}">${data.projectedPoints}</strong>
-        <span class="text-sm font-semibold text-slate-400">/100</span>
-      </div>
-      <div class="mt-1 text-xs text-slate-500">${data.currentPoints} → ${data.projectedPoints} điểm</div>
+    <div class="mt-3 grid grid-cols-3 divide-x divide-slate-100 rounded-xl border border-slate-200 bg-white">
+      <div class="p-2.5"><span class="block text-[9px] uppercase tracking-wide text-slate-400">Mốc tính</span><strong class="mt-1 block text-xs text-slate-800">${formatDateVN(requestDate)}</strong></div>
+      <div class="p-2.5"><span class="block text-[9px] uppercase tracking-wide text-slate-400">Ngày nghỉ</span><strong class="mt-1 block text-xs text-slate-800">${formatDateVN(startDate)}</strong></div>
+      <div class="p-2.5"><span class="block text-[9px] uppercase tracking-wide text-slate-400">Báo trước</span><strong class="mt-1 block text-xs text-slate-800">${notice}</strong></div>
     </div>
 
-    <div class="mt-5 grid grid-cols-3 gap-2">
-      <div class="rounded-2xl border border-slate-200 p-3">
-        <span class="text-[11px] uppercase text-slate-400">Mốc tính</span>
-        <div class="mt-1 text-sm font-bold">${formatDateVN(requestDate)}</div>
-      </div>
-      <div class="rounded-2xl border border-slate-200 p-3">
-        <span class="text-[11px] uppercase text-slate-400">Ngày nghỉ</span>
-        <div class="mt-1 text-sm font-bold">${formatDateVN(startDate)}</div>
-      </div>
-      <div class="rounded-2xl border border-slate-200 p-3">
-        <span class="text-[11px] uppercase text-slate-400">Báo trước</span>
-        <div class="mt-1 text-sm font-bold">${notice}</div>
-      </div>
-    </div>
-
-    <div class="mt-5 rounded-2xl border px-4 py-4 text-sm leading-6 ${tone.box}">${timing}</div>
+    <div class="mt-3 rounded-xl border px-3 py-2.5 text-xs leading-5 ${tone.box}">${timing}</div>
     ${suggestion}
 
-    <div class="mt-5 rounded-2xl border border-slate-200 p-4">
-      <div class="text-xs font-semibold uppercase tracking-wide text-slate-400">Quy tắc áp dụng</div>
-      <div class="mt-1 text-sm font-bold">${data.rule.noticeLabel}</div>
-      <p class="mt-1 text-xs leading-5 text-slate-500">${data.rule.label}. ${data.reason}</p>
-    </div>
+    <details class="group mt-3 rounded-xl border border-slate-200 bg-white">
+      <summary class="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5 text-xs font-semibold text-slate-600">Chi tiết quy tắc<svg viewBox="0 0 20 20" fill="none" class="size-3.5 text-slate-400 transition group-open:rotate-180"><path d="m5 7.5 5 5 5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></summary>
+      <div class="border-t border-slate-100 px-3 py-3"><div class="text-xs font-bold text-slate-800">${data.rule.noticeLabel}</div><p class="mt-1 text-[11px] leading-5 text-slate-500">${data.rule.label}. ${data.reason}</p></div>
+    </details>
   `;
 }
 
@@ -339,7 +336,7 @@ function chip(label, value, tone) {
     }[tone] || "border-slate-200 bg-slate-50 text-slate-600";
 
   return `
-    <span class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold ${className}">
+    <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${className}">
       <span class="font-medium opacity-70">${label}</span>${value}
     </span>
   `;
@@ -368,10 +365,10 @@ function renderCalendar(data, requestDate, startDate, endDate) {
         : "—",
       "violet",
     ),
-    chip("An toàn", "0 điểm", "green"),
+    chip("An toàn", "0", "green"),
     chip("Cảnh báo", "-1", "amber"),
     chip("Vi phạm", "-2", "rose"),
-    chip("Đã qua", "không tính", "slate"),
+    chip("Đã qua", "", "slate"),
   ].join("");
 
   const gridStart = addDays(month, -((month.getDay() + 6) % 7));
@@ -380,65 +377,52 @@ function renderCalendar(data, requestDate, startDate, endDate) {
 
   for (let index = 0; index < 42; index += 1) {
     const date = addDays(gridStart, index);
-    const currentMonth =
+    const current =
       date.getMonth() === month.getMonth() &&
       date.getFullYear() === month.getFullYear();
-    const past = Boolean(currentMonth && requestDate && isBefore(date, requestDate));
+    const beforeReference = current && requestDate && isBefore(date, requestDate);
+    const evaluation =
+      current && !beforeReference ? evaluateCandidate(date, requestDate) : null;
+    const deduction = evaluation?.deduction;
 
-    const deduction =
-      currentMonth && !past
-        ? evaluateCandidate(date, requestDate)?.deduction
-        : null;
+    let status = "border-transparent bg-slate-50/60 text-slate-300";
+    let label = "";
+    let selectable = false;
 
-    let statusClass =
-      "border-transparent bg-slate-50/60 text-slate-300";
-    let statusLabel = "";
-    let statusLabelClass = "text-slate-400";
-
-    if (past) {
-      statusClass =
-        "cursor-not-allowed border-slate-100 bg-slate-100/70 text-slate-300 opacity-45";
-      statusLabel = "Đã qua";
-      statusLabelClass = "text-slate-400";
-    } else if (currentMonth && deduction === 0) {
-      statusClass =
-        "cursor-pointer border-emerald-100 bg-emerald-50/90 hover:bg-emerald-100";
-      statusLabel = "An toàn";
-      statusLabelClass = "text-emerald-700";
-    } else if (currentMonth && deduction === 1) {
-      statusClass =
-        "cursor-pointer border-amber-100 bg-amber-50/90 hover:bg-amber-100";
-      statusLabel = "-1";
-      statusLabelClass = "text-amber-700";
-    } else if (currentMonth && deduction >= 2) {
-      statusClass =
-        "cursor-pointer border-rose-100 bg-rose-50/90 hover:bg-rose-100";
-      statusLabel = "-2";
-      statusLabelClass = "text-rose-700";
-    } else if (currentMonth) {
-      statusClass = "cursor-pointer border-slate-100 bg-white";
-    } else {
-      statusClass =
-        "cursor-not-allowed border-transparent bg-slate-50/60 text-slate-300 opacity-50";
+    if (beforeReference) {
+      status = "border-slate-100 bg-slate-50/80 text-slate-300 opacity-60";
+      label = "Đã qua";
+    } else if (current && deduction === 0) {
+      status = "border-emerald-100 bg-emerald-50/90 hover:bg-emerald-100";
+      label = "An toàn";
+      selectable = true;
+    } else if (current && deduction === 1) {
+      status = "border-amber-100 bg-amber-50/90 hover:bg-amber-100";
+      label = "-1";
+      selectable = true;
+    } else if (current && deduction >= 2) {
+      status = "border-rose-100 bg-rose-50/90 hover:bg-rose-100";
+      label = "-2";
+      selectable = true;
+    } else if (current) {
+      status = "border-slate-100 bg-white";
+      selectable = Boolean(requestDate);
     }
 
     const classes = [
-      "relative min-h-[62px] rounded-xl border p-1.5 text-left transition sm:min-h-[82px] sm:p-2.5",
-      statusClass,
+      "relative min-h-[58px] rounded-xl border p-1.5 text-left transition sm:min-h-[72px] sm:p-2",
+      status,
+      selectable ? "cursor-pointer" : "cursor-default",
     ];
 
     if (inRange(date, startDate, actualEnd)) {
-      classes.push(
-        "outline outline-2 outline-offset-[-2px] outline-violet-500",
-      );
+      classes.push("outline outline-2 outline-offset-[-2px] outline-violet-500");
     }
     if (sameDate(date, requestDate)) {
       classes.push("ring-2 ring-inset ring-blue-500");
     }
     if (sameDate(date, deadline)) {
-      classes.push(
-        "shadow-[inset_0_0_0_2px_rgba(245,158,11,.8)]",
-      );
+      classes.push("shadow-[inset_0_0_0_2px_rgba(245,158,11,.8)]");
     }
     if (sameDate(date, today)) {
       classes.push(
@@ -446,40 +430,29 @@ function renderCalendar(data, requestDate, startDate, endDate) {
       );
     }
 
-    const disabled = past || !currentMonth;
-    const titleParts = [formatDateVN(date)];
-    if (past) titleParts.push("Đã qua · không tính");
-    else if (statusLabel) titleParts.push(statusLabel);
+    const labelClass = beforeReference
+      ? "text-slate-300"
+      : deduction === 0
+        ? "text-emerald-700"
+        : deduction === 1
+          ? "text-amber-700"
+          : "text-rose-700";
+
+    const dataAttribute = selectable
+      ? `data-calendar-date="${toISODate(date)}"`
+      : "disabled";
 
     cells.push(`
-      <button
-        type="button"
-        data-calendar-date="${toISODate(date)}"
-        class="${classes.join(" ")}"
-        title="${titleParts.join(" · ")}"
-        ${disabled ? "disabled aria-disabled=\"true\"" : ""}
-      >
+      <button type="button" ${dataAttribute} class="${classes.join(" ")}" title="${formatDateVN(date)}${label ? ` · ${label}` : ""}">
         <div class="flex items-start justify-between">
-          <span class="flex size-7 items-center justify-center rounded-lg text-xs font-bold ${
-            sameDate(date, today)
-              ? "bg-slate-900 text-white"
-              : currentMonth
-                ? past
-                  ? "text-slate-400"
-                  : "text-slate-800"
-                : "text-slate-300"
-          }">${date.getDate()}</span>
+          <span class="flex size-6 items-center justify-center rounded-lg text-[11px] font-bold ${sameDate(date, today) ? "bg-slate-900 text-white" : current ? beforeReference ? "text-slate-300" : "text-slate-800" : "text-slate-300"}">${date.getDate()}</span>
           <span class="flex gap-1">
-            ${sameDate(date, requestDate) ? '<i class="size-2 rounded-full bg-blue-500"></i>' : ""}
-            ${sameDate(date, deadline) ? '<i class="size-2 rounded-full bg-amber-500"></i>' : ""}
-            ${inRange(date, startDate, actualEnd) ? '<i class="size-2 rounded-full bg-violet-500"></i>' : ""}
+            ${sameDate(date, requestDate) ? '<i class="size-1.5 rounded-full bg-blue-500"></i>' : ""}
+            ${sameDate(date, deadline) ? '<i class="size-1.5 rounded-full bg-amber-500"></i>' : ""}
+            ${inRange(date, startDate, actualEnd) ? '<i class="size-1.5 rounded-full bg-violet-500"></i>' : ""}
           </span>
         </div>
-        ${
-          statusLabel
-            ? `<div class="mt-2 hidden text-[9px] font-extrabold uppercase ${statusLabelClass} sm:block">${statusLabel}</div>`
-            : ""
-        }
+        ${label ? `<div class="mt-2 hidden text-[8px] font-extrabold uppercase tracking-wide ${labelClass} sm:block">${label}</div>` : ""}
       </button>
     `);
   }
@@ -488,38 +461,33 @@ function renderCalendar(data, requestDate, startDate, endDate) {
 }
 
 function calculate() {
-  const requestDate = parseISODate(requestInput.value);
-  const startDate = parseISODate(startInput.value);
+  const request = parseISODate(requestInput.value);
+  const start = parseISODate(startInput.value);
   const multi = typeInput.value === "leave-multi";
-  const endDate = multi ? parseISODate(endInput.value) : startDate;
+  const end = multi ? parseISODate(endInput.value) : start;
 
-  if (!requestDate) {
+  if (!request) {
     renderError("Vui lòng chọn mốc tính hợp lệ.");
-    renderCalendar(null, null, startDate, endDate);
+    renderCalendar(null, null, start, end);
     return;
   }
 
   const data = evaluateAttendance({
     currentPoints: pointsInput.value,
     type: normalizedType(),
-    requestDate,
-    startDate,
-    endDate,
+    requestDate: request,
+    startDate: start,
+    endDate: end,
     noContact: noContactInput.checked,
   });
 
-  renderTop(pointsInput.value, requestDate);
-  renderResult(data, requestDate, startDate);
-  renderCalendar(data, requestDate, startDate, endDate);
+  renderTop(pointsInput.value, request);
+  renderResult(data, request, start);
+  renderCalendar(data, request, start, end);
   saveState();
 }
 
 function selectStartDate(date) {
-  if (!date) return;
-
-  const requestDate = parseISODate(requestInput.value);
-  if (requestDate && isBefore(date, requestDate)) return;
-
   const oldDuration = durationDays();
   startInput.value = toISODate(date);
   endInput.value =
@@ -542,7 +510,6 @@ startInput.addEventListener("change", () => {
   ) {
     endInput.value = startInput.value;
   }
-
   const date = parseISODate(startInput.value);
   if (date) calendarViewDate = startOfMonth(date);
   calculate();
@@ -551,9 +518,12 @@ startInput.addEventListener("change", () => {
 quickDateButtons.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-offset]");
   if (!button) return;
-
-  const baseDate = parseISODate(requestInput.value) || localToday();
-  selectStartDate(addDays(baseDate, Number(button.dataset.offset)));
+  selectStartDate(
+    addDays(
+      parseISODate(requestInput.value) || localToday(),
+      Number(button.dataset.offset),
+    ),
+  );
 });
 
 referenceTodayButton.addEventListener("click", () => {
@@ -563,16 +533,14 @@ referenceTodayButton.addEventListener("click", () => {
 
 result.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-use-safe-date]");
-  if (!button) return;
-  selectStartDate(parseISODate(button.dataset.useSafeDate));
+  if (button) selectStartDate(parseISODate(button.dataset.useSafeDate));
 });
 
 calendarGrid?.addEventListener("click", (event) => {
-  const button = event.target.closest(
-    "button[data-calendar-date]:not(:disabled)",
-  );
-  if (!button) return;
-  selectStartDate(parseISODate(button.dataset.calendarDate));
+  const button = event.target.closest("button[data-calendar-date]");
+  if (button && !button.disabled) {
+    selectStartDate(parseISODate(button.dataset.calendarDate));
+  }
 });
 
 calendarPrev?.addEventListener("click", () => {
@@ -610,7 +578,6 @@ $("#reset-btn").addEventListener("click", () => {
   localStorage.removeItem(STORAGE_KEY);
   const today = localToday();
   const safe = defaultSafeDate(today);
-
   pointsInput.value = 96;
   typeInput.value = "leave";
   requestInput.value = toISODate(today);
@@ -618,7 +585,6 @@ $("#reset-btn").addEventListener("click", () => {
   endInput.value = startInput.value;
   noContactInput.checked = false;
   calendarViewDate = startOfMonth(safe);
-
   toggleEndDate();
   calculate();
 });
