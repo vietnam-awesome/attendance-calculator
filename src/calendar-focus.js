@@ -9,6 +9,12 @@ const calendarGrid = document.querySelector("#calendar-grid");
 const startInput = document.querySelector("#start-date");
 const typeInput = document.querySelector("#event-type");
 const policyHint = document.querySelector("#policy-hint");
+const pointsInput = document.querySelector("#current-points");
+const resetButton = document.querySelector("#reset-btn");
+
+const DEFAULT_POINTS = 100;
+const OLD_DEFAULT_POINTS = 96;
+const DEFAULT_POINTS_MIGRATION_KEY = "attendance-default-points-100-v1";
 
 const policyHints = {
   leave: {
@@ -32,6 +38,23 @@ const policyHints = {
     title: "Về sớm: báo trước ít nhất 2 ngày",
   },
 };
+
+function setPoints(value) {
+  if (!pointsInput) return;
+  pointsInput.value = String(value);
+  pointsInput.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function migrateDefaultPoints() {
+  if (!pointsInput || localStorage.getItem(DEFAULT_POINTS_MIGRATION_KEY)) return;
+
+  // Only migrate the previous default. Preserve any custom score the user entered.
+  if (Number(pointsInput.value) === OLD_DEFAULT_POINTS) {
+    setPoints(DEFAULT_POINTS);
+  }
+
+  localStorage.setItem(DEFAULT_POINTS_MIGRATION_KEY, "1");
+}
 
 function syncPolicyHint() {
   if (!policyHint || !typeInput) return;
@@ -99,6 +122,7 @@ typeInput?.addEventListener("change", () =>
   requestAnimationFrame(syncPolicyHint),
 );
 syncPolicyHint();
+migrateDefaultPoints();
 
 if (calendarGrid) {
   const observer = new MutationObserver(() => normalizePastCells());
@@ -112,4 +136,9 @@ calendarGrid?.addEventListener("click", (event) => {
   const day = event.target.closest("button[data-calendar-date]");
   if (!day || day.disabled) return;
   focusSelectedDay();
+});
+
+resetButton?.addEventListener("click", () => {
+  // app.js resets first; then normalize the new default to 100.
+  queueMicrotask(() => setPoints(DEFAULT_POINTS));
 });
