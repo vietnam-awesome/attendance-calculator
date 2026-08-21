@@ -13,6 +13,7 @@ const $ = (selector) => document.querySelector(selector);
 const form = $("#calculator-form");
 const pointsInput = $("#current-points");
 const typeInput = $("#event-type");
+const requestInput = $("#request-date");
 const startInput = $("#start-date");
 const endInput = $("#end-date");
 const endField = $("#end-field");
@@ -23,8 +24,8 @@ const pointsBadge = $("#points-badge");
 const pointsBar = $("#points-bar");
 const currentLevelEl = $("#current-level");
 const policyHint = $("#policy-hint");
-const todayLabel = $("#today-label");
 const quickDateButtons = $("#quick-date-buttons");
+const referenceTodayButton = $("#reference-today-btn");
 
 const STORAGE_KEY = "attendance-calculator-v3";
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -55,6 +56,7 @@ function loadState() {
   const fallback = {
     currentPoints: 96,
     type: "leave",
+    requestDate: toISODate(today),
     startDate: toISODate(tomorrow),
     endDate: toISODate(tomorrow),
     noContact: false,
@@ -72,6 +74,7 @@ function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify({
     currentPoints: Number(pointsInput.value),
     type: typeInput.value,
+    requestDate: requestInput.value,
     startDate: startInput.value,
     endDate: endInput.value,
     noContact: noContactInput.checked,
@@ -82,6 +85,7 @@ function setInitialState() {
   const state = loadState();
   pointsInput.value = state.currentPoints;
   typeInput.value = state.type;
+  requestInput.value = state.requestDate;
   startInput.value = state.startDate;
   endInput.value = state.endDate;
   noContactInput.checked = state.noContact;
@@ -121,10 +125,10 @@ function levelPillClass(level) {
   return "border-rose-400/20 bg-rose-400/10 text-rose-200";
 }
 
-function renderTopSummary(points) {
+function renderTopSummary(points, referenceDate = localToday()) {
   const safePoints = Math.max(0, Math.min(100, Number(points) || 0));
   const level = getViolationLevel(safePoints);
-  const period = getEvaluationPeriod(localToday());
+  const period = getEvaluationPeriod(referenceDate);
 
   periodEl.textContent = `${formatDateVN(period.start)} – ${formatDateVN(period.end)}`;
   pointsBadge.textContent = safePoints;
@@ -172,7 +176,7 @@ function renderResult(data, requestDate, startDate) {
 
   const timingMessage = data.timely
     ? `Bạn vẫn còn trong hạn. Mốc chậm nhất là <strong>${formatDateVN(data.deadline)}</strong>.`
-    : `Mốc chậm nhất là <strong>${formatDateVN(data.deadline)}</strong>. Tính từ hôm nay đã trễ <strong>${lateBy} ngày</strong>.`;
+    : `Mốc chậm nhất là <strong>${formatDateVN(data.deadline)}</strong>. Tính từ mốc đã chọn thì trễ <strong>${lateBy} ngày</strong>.`;
 
   const levelNote = levelChanged
     ? `<div class="mt-5 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-900"><strong>Cảnh báo:</strong> Điểm dự kiến chuyển từ ${data.currentLevel.name} sang ${data.projectedLevel.name}.</div>`
@@ -207,7 +211,7 @@ function renderResult(data, requestDate, startDate) {
 
     <div class="mt-5 grid grid-cols-3 gap-2 sm:gap-3">
       <div class="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
-        <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Hôm nay</div>
+        <div class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">Mốc tính</div>
         <div class="mt-1 text-sm font-bold text-slate-900">${formatDateVN(requestDate)}</div>
       </div>
       <div class="rounded-2xl border border-slate-200 bg-white p-3 sm:p-4">
@@ -240,23 +244,27 @@ function renderResult(data, requestDate, startDate) {
 }
 
 function calculate() {
-  const today = localToday();
+  const requestDate = parseISODate(requestInput.value);
   const startDate = parseISODate(startInput.value);
   const isMultiDay = typeInput.value === "leave-multi";
   const endDate = isMultiDay ? parseISODate(endInput.value) : startDate;
 
+  if (!requestDate) {
+    renderError("Vui lòng chọn mốc tính hợp lệ.");
+    return;
+  }
+
   const data = evaluateAttendance({
     currentPoints: pointsInput.value,
     type: normalizedType(),
-    requestDate: today,
+    requestDate,
     startDate,
     endDate,
     noContact: noContactInput.checked,
   });
 
-  todayLabel.textContent = formatDateVN(today);
-  renderTopSummary(pointsInput.value);
-  renderResult(data, today, startDate);
+  renderTopSummary(pointsInput.value, requestDate);
+  renderResult(data, requestDate, startDate);
   saveState();
 }
 
@@ -276,13 +284,19 @@ quickDateButtons.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-offset]");
   if (!button) return;
 
-  const targetDate = addDays(localToday(), Number(button.dataset.offset));
+  const baseDate = parseISODate(requestInput.value) || localToday();
+  const targetDate = addDays(baseDate, Number(button.dataset.offset));
   startInput.value = toISODate(targetDate);
   if (typeInput.value !== "leave-multi") {
     endInput.value = startInput.value;
   } else if (!endInput.value || endInput.value < startInput.value) {
     endInput.value = startInput.value;
   }
+  calculate();
+});
+
+referenceTodayButton.addEventListener("click", () => {
+  requestInput.value = toISODate(localToday());
   calculate();
 });
 
@@ -294,9 +308,11 @@ form.addEventListener("submit", (event) => {
 
 $("#reset-btn").addEventListener("click", () => {
   localStorage.removeItem(STORAGE_KEY);
-  const tomorrow = addDays(localToday(), 1);
+  const today = localToday();
+  const tomorrow = addDays(today, 1);
   pointsInput.value = 96;
   typeInput.value = "leave";
+  requestInput.value = toISODate(today);
   startInput.value = toISODate(tomorrow);
   endInput.value = startInput.value;
   noContactInput.checked = false;
