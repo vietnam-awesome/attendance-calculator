@@ -150,3 +150,50 @@ th { color: var(--muted); font-size: 0.76rem; text-transform: uppercase; letter-
   .panel, .result-card { padding: 20px; }
   .form-actions { flex-direction: column; }
 }
+
+/* Simplified leave checker */
+.simple-panel h2 { margin-bottom: 14px; }
+.today-banner {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 12px;
+  align-items: center;
+  margin: 0 0 22px;
+  padding: 13px 14px;
+  border-radius: 14px;
+  background: #f5f8ff;
+  border: 1px solid #dbe6fb;
+}
+.today-banner span { color: var(--muted); font-size: .82rem; font-weight: 700; }
+.today-banner strong { justify-self: end; font-size: 1rem; }
+.today-banner small { grid-column: 1 / -1; color: var(--muted); margin-top: 3px; }
+.simple-form-grid { gap: 14px; }
+.featured-field input { min-height: 56px; font-size: 1.06rem; font-weight: 700; }
+.advanced-options { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 12px; }
+.advanced-options summary { cursor: pointer; color: var(--muted); font-weight: 750; font-size: .88rem; }
+.advanced-options[open] summary { margin-bottom: 10px; }
+.compact-actions { margin-top: 14px; }
+.scenario-line {
+  margin-top: 18px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #f6f8fb;
+  color: #43516a;
+  font-weight: 750;
+  line-height: 1.5;
+}
+.timing-box {
+  margin-top: 10px;
+  padding: 14px;
+  border-radius: 14px;
+  line-height: 1.55;
+  font-weight: 650;
+}
+.timing-box.safe { background: var(--safe-soft); color: #087554; }
+.timing-box.risk { background: var(--risk-soft); color: #995407; }
+.simplified-metrics { grid-template-columns: 1fr 1fr; }
+
+@media (max-width: 560px) {
+  .today-banner { grid-template-columns: 1fr auto; }
+  .simplified-metrics { grid-template-columns: 1fr; }
+}
