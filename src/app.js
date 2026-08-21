@@ -13,7 +13,6 @@ const $ = (selector) => document.querySelector(selector);
 const form = $("#calculator-form");
 const pointsInput = $("#current-points");
 const typeInput = $("#event-type");
-const requestInput = $("#request-date");
 const startInput = $("#start-date");
 const endInput = $("#end-date");
 const endField = $("#end-field");
@@ -24,8 +23,11 @@ const pointsBadge = $("#points-badge");
 const pointsBar = $("#points-bar");
 const currentLevelEl = $("#current-level");
 const policyHint = $("#policy-hint");
+const todayLabel = $("#today-label");
 
-const STORAGE_KEY = "attendance-calculator-v1";
+// Bump the storage key so the old, confusing request-date state is discarded.
+const STORAGE_KEY = "attendance-calculator-v2";
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 function localToday() {
   const now = new Date();
@@ -38,14 +40,23 @@ function addDays(date, days) {
   return next;
 }
 
+function utcDayNumber(date) {
+  return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / DAY_MS;
+}
+
+function calendarDaysBetween(later, earlier) {
+  if (!later || !earlier) return 0;
+  return Math.round(utcDayNumber(later) - utcDayNumber(earlier));
+}
+
 function loadState() {
   const today = localToday();
+  const tomorrow = addDays(today, 1);
   const fallback = {
     currentPoints: 96,
     type: "leave",
-    requestDate: toISODate(today),
-    startDate: toISODate(addDays(today, 10)),
-    endDate: toISODate(addDays(today, 10)),
+    startDate: toISODate(tomorrow),
+    endDate: toISODate(tomorrow),
     noContact: false,
   };
 
@@ -61,7 +72,6 @@ function saveState() {
   const state = {
     currentPoints: Number(pointsInput.value),
     type: typeInput.value,
-    requestDate: requestInput.value,
     startDate: startInput.value,
     endDate: endInput.value,
     noContact: noContactInput.checked,
@@ -73,20 +83,34 @@ function setInitialState() {
   const state = loadState();
   pointsInput.value = state.currentPoints;
   typeInput.value = state.type;
-  requestInput.value = state.requestDate;
   startInput.value = state.startDate;
   endInput.value = state.endDate;
   noContactInput.checked = state.noContact;
   toggleEndDate();
 }
 
-function toggleEndDate() {
-  const isLeave = typeInput.value === "leave";
-  endField.hidden = !isLeave;
-  endInput.required = isLeave;
-  if (isLeave && !endInput.value && startInput.value) endInput.value = startInput.value;
+function normalizedType() {
+  return typeInput.value === "leave-multi" ? "leave" : typeInput.value;
+}
 
-  const base = RULES[typeInput.value];
+function toggleEndDate() {
+  const isMultiDay = typeInput.value === "leave-multi";
+  endField.hidden = !isMultiDay;
+  endInput.required = isMultiDay;
+
+  if (isMultiDay && (!endInput.value || endInput.value < startInput.value)) {
+    endInput.value = startInput.value;
+  }
+
+  if (typeInput.value === "leave") {
+    policyHint.textContent = "Nghỉ 1 ngày cần báo trước ít nhất 1 tuần";
+    return;
+  }
+  if (typeInput.value === "leave-multi") {
+    policyHint.textContent = "Tự xác định theo số ngày nghỉ";
+    return;
+  }
+  const base = RULES[normalizedType()];
   policyHint.textContent = base?.shortLabel || "";
 }
 
@@ -102,7 +126,7 @@ function renderTopSummary(points) {
   currentLevelEl.dataset.level = String(level.level);
 }
 
-function renderResult(data) {
+function renderResult(data, requestDate, startDate) {
   if (!data.valid) {
     result.className = "result-card result-error";
     result.innerHTML = `<div class="result-icon">!</div><div><h2>Chưa thể tính</h2><p>${data.error}</p></div>`;
@@ -112,17 +136,24 @@ function renderResult(data) {
   const isSafe = data.deduction === 0;
   const levelChanged = data.projectedLevel.level > data.currentLevel.level;
   const statusClass = isSafe ? "result-safe" : "result-risk";
+  const noticeDays = calendarDaysBetween(startDate, requestDate);
+  const lateBy = Math.max(0, calendarDaysBetween(requestDate, data.deadline));
+
   const statusTitle = isSafe
-    ? "Không vi phạm thời hạn chuyên cần"
-    : `Có nguy cơ bị trừ ${data.deduction} điểm`;
+    ? "Không bị trừ điểm"
+    : `Nếu gửi hôm nay: dự kiến -${data.deduction} điểm`;
+
+  const scenarioText = noContactInput.checked
+    ? `Ngày dự định: ${formatDateVN(startDate)} · mô phỏng không thông báo`
+    : `Hôm nay ${formatDateVN(requestDate)} → nghỉ ${formatDateVN(startDate)} → báo trước ${Math.max(0, noticeDays)} ngày`;
+
+  const timingMessage = data.timely
+    ? `Bạn vẫn còn trong hạn. Hạn chót là ${formatDateVN(data.deadline)}.`
+    : `Bạn cần xin chậm nhất ${formatDateVN(data.deadline)}. Nếu gửi hôm nay thì đã trễ hạn ${lateBy} ngày.`;
 
   const thresholdNote = levelChanged
     ? `<div class="alert danger"><strong>Cảnh báo:</strong> Điểm dự kiến chuyển từ ${data.currentLevel.name} sang ${data.projectedLevel.name}.</div>`
     : `<div class="alert neutral">Sau tình huống này vẫn ở vùng <strong>${data.projectedLevel.name}</strong> (${data.projectedLevel.range}).</div>`;
-
-  const perfectNote = data.rewardPointConditionMet
-    ? "Điểm dự kiến vẫn đáp ứng điều kiện 100 điểm của tiêu chí thưởng chuyên cần (còn phụ thuộc các điều kiện khác)."
-    : "Điểm dự kiến không còn ở mức 100; vì vậy không đáp ứng riêng tiêu chí ‘điểm còn lại trong kỳ bằng 100’ của thưởng chuyên cần.";
 
   result.className = `result-card ${statusClass}`;
   result.innerHTML = `
@@ -135,45 +166,46 @@ function renderResult(data) {
       </div>
     </div>
 
-    <div class="metrics-grid">
+    <div class="scenario-line">${scenarioText}</div>
+    <div class="timing-box ${isSafe ? "safe" : "risk"}">${timingMessage}</div>
+
+    <div class="metrics-grid simplified-metrics">
       <div class="metric">
-        <span>Quy tắc áp dụng</span>
-        <strong>${data.rule.label}</strong>
-        <small>${data.rule.noticeLabel}</small>
-      </div>
-      <div class="metric">
-        <span>Hạn xin chậm nhất</span>
-        <strong>${formatDateVN(data.deadline)}</strong>
-        <small>${data.timely ? "Ngày xin đang hợp lệ" : "Ngày xin đã trễ hạn"}</small>
-      </div>
-      <div class="metric">
-        <span>Điểm bị trừ</span>
-        <strong>${data.deduction === 0 ? "0" : `-${data.deduction}`}</strong>
-        <small>Áp dụng mức cao nhất cho một lần</small>
+        <span>Quy định</span>
+        <strong>${data.rule.noticeLabel}</strong>
+        <small>${data.rule.label}</small>
       </div>
       <div class="metric emphasized">
         <span>Điểm sau dự kiến</span>
         <strong>${data.projectedPoints}/100</strong>
-        <small>${data.projectedLevel.name}</small>
+        <small>${data.currentPoints}/100 → ${data.projectedPoints}/100</small>
       </div>
     </div>
 
     ${thresholdNote}
-    <div class="alert neutral"><strong>Thưởng chuyên cần:</strong> ${perfectNote}</div>
   `;
 }
 
 function calculate() {
+  const today = localToday();
+  const startDate = parseISODate(startInput.value);
+  const isMultiDay = typeInput.value === "leave-multi";
+  const endDate = isMultiDay
+    ? parseISODate(endInput.value)
+    : startDate;
+
   const data = evaluateAttendance({
     currentPoints: pointsInput.value,
-    type: typeInput.value,
-    requestDate: parseISODate(requestInput.value),
-    startDate: parseISODate(startInput.value),
-    endDate: parseISODate(endInput.value || startInput.value),
+    type: normalizedType(),
+    requestDate: today,
+    startDate,
+    endDate,
     noContact: noContactInput.checked,
   });
+
+  todayLabel.textContent = formatDateVN(today);
   renderTopSummary(pointsInput.value);
-  renderResult(data);
+  renderResult(data, today, startDate);
   saveState();
 }
 
@@ -183,7 +215,7 @@ typeInput.addEventListener("change", () => {
 });
 
 startInput.addEventListener("change", () => {
-  if (typeInput.value === "leave" && (!endInput.value || endInput.value < startInput.value)) {
+  if (typeInput.value === "leave-multi" && (!endInput.value || endInput.value < startInput.value)) {
     endInput.value = startInput.value;
   }
   calculate();
@@ -197,11 +229,10 @@ form.addEventListener("submit", (event) => {
 
 $("#reset-btn").addEventListener("click", () => {
   localStorage.removeItem(STORAGE_KEY);
-  const today = localToday();
+  const tomorrow = addDays(localToday(), 1);
   pointsInput.value = 96;
   typeInput.value = "leave";
-  requestInput.value = toISODate(today);
-  startInput.value = toISODate(addDays(today, 10));
+  startInput.value = toISODate(tomorrow);
   endInput.value = startInput.value;
   noContactInput.checked = false;
   toggleEndDate();
