@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Công cụ tính điểm chuyên cần và kiểm tra ngày dự định xin nghỉ có vi phạm quy định thông báo hay không." />
+  <meta name="theme-color" content="#2f6fed" />
+  <title>Tính Chuyên Cần</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <header class="hero">
+    <div class="shell hero-grid">
+      <section class="hero-main">
+        <p class="eyebrow">Attendance · Chuyên cần</p>
+        <h1>Ngày định nghỉ có làm mất điểm chuyên cần không?</h1>
+        <p class="hero-copy">
+          Nhập ngày dự định nghỉ và ngày bạn gửi yêu cầu. Công cụ sẽ tính hạn báo trước,
+          mức trừ điểm dự kiến và điểm chuyên cần còn lại sau tình huống đó.
+        </p>
+        <div class="hero-note">
+          <span>ℹ️</span>
+          <div><strong>Mặc định hiện tại: 96/100 điểm.</strong> Bạn có thể chỉnh lại khi điểm thực tế thay đổi.</div>
+        </div>
+      </section>
+
+      <aside class="summary-card" aria-label="Tóm tắt điểm hiện tại">
+        <div>
+          <div class="summary-top">
+            <div>
+              <span>Điểm hiện tại</span><br />
+              <strong id="points-badge" class="points-badge">96/100</strong>
+            </div>
+            <div style="text-align:right">
+              <span>Kỳ đánh giá</span><br />
+              <strong id="evaluation-period">—</strong>
+            </div>
+          </div>
+          <div class="progress" aria-hidden="true"><div id="points-bar" style="width:96%"></div></div>
+          <p style="margin:0;color:var(--muted);font-size:.88rem">Mức kỷ luật hiện tại</p>
+          <span id="current-level" class="level-pill">Chưa hình thành mức vi phạm</span>
+        </div>
+      </aside>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="main-grid">
+      <div class="panel">
+        <p class="eyebrow">Bước 1</p>
+        <h2>Thông tin dự định</h2>
+        <p class="panel-subtitle">Ngày xin mặc định là hôm nay. Với nghỉ nhiều ngày, hệ thống tự chọn ngưỡng 1 tuần / 1 tháng theo độ dài kỳ nghỉ.</p>
+
+        <form id="calculator-form">
+          <div class="form-grid">
+            <div class="field">
+              <label for="current-points">Điểm chuyên cần hiện tại</label>
+              <input id="current-points" type="number" min="0" max="100" step="1" value="96" required />
+              <small>Đầu mỗi kỳ đánh giá reset về 100 điểm.</small>
+            </div>
+
+            <div class="field">
+              <label for="event-type">Loại tình huống</label>
+              <select id="event-type">
+                <option value="leave">Nghỉ từ 1 ngày trở lên</option>
+                <option value="half">Nghỉ 1/2 ngày</option>
+                <option value="late">Đi trễ</option>
+                <option value="early">Về sớm</option>
+              </select>
+              <small id="policy-hint">Tự xác định theo độ dài kỳ nghỉ</small>
+            </div>
+
+            <div class="field">
+              <label for="request-date">Ngày gửi yêu cầu / submit form</label>
+              <input id="request-date" type="date" required />
+              <small>Đây là ngày được dùng để xét thời hạn thông báo.</small>
+            </div>
+
+            <div class="field">
+              <label for="start-date">Ngày bắt đầu nghỉ / phát sinh</label>
+              <input id="start-date" type="date" required />
+            </div>
+
+            <div class="field full" id="end-field">
+              <label for="end-date">Ngày kết thúc nghỉ</label>
+              <input id="end-date" type="date" required />
+              <small>1–6 ngày: xin trước 1 tuần · 7–29 ngày: xin trước 1 tháng · từ 30 ngày: xin trước 2 tháng.</small>
+            </div>
+
+            <div class="field full">
+              <div class="checkbox-row">
+                <input id="no-contact" type="checkbox" />
+                <label for="no-contact">
+                  <strong>Không liên lạc / không thông báo.</strong><br />
+                  Chọn mục này nếu muốn mô phỏng trường hợp không báo trước. Quy định áp dụng mức 2 điểm.
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button class="primary-btn" type="submit">Tính chuyên cần</button>
+            <button class="ghost-btn" type="button" id="reset-btn">Đặt lại về 96 điểm</button>
+          </div>
+        </form>
+      </div>
+
+      <div id="result" class="result-card" aria-live="polite"></div>
+    </section>
+
+    <section class="rules-card">
+      <div class="rules-header">
+        <p class="eyebrow">Quy tắc đang dùng</p>
+        <h2>Tóm tắt từ bộ tài liệu chuyên cần</h2>
+        <p>Trang chỉ dự báo theo thời hạn thông báo và điểm chuyên cần; phê duyệt của cấp trên vẫn là điều kiện riêng.</p>
+      </div>
+      <div class="rules-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Tình huống</th>
+              <th>Thời hạn hợp lệ</th>
+              <th>Nếu sai hạn</th>
+              <th>Ghi chú</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Đi trễ / về sớm / nghỉ 1/2 ngày</td>
+              <td><span class="badge safe">≥ 2 ngày trước</span></td>
+              <td>Trước 1 ngày: <strong>-1</strong>; cùng ngày/không báo: <strong>-2</strong></td>
+              <td>Trường hợp có kế hoạch phải xin trước ít nhất 2 ngày.</td>
+            </tr>
+            <tr>
+              <td>Nghỉ 1–6 ngày</td>
+              <td><span class="badge safe">≥ 1 tuần trước</span></td>
+              <td>1 ngày nghỉ: có thể <strong>-1/-2</strong>; nghỉ >1 ngày sai quy định: <strong>-2</strong></td>
+              <td>Ngày submit form được xem là ngày xin nghỉ.</td>
+            </tr>
+            <tr>
+              <td>Nghỉ 7–29 ngày</td>
+              <td><span class="badge safe">≥ 1 tháng trước</span></td>
+              <td><strong>-2</strong> nếu không đủ thời hạn</td>
+              <td>Vắng mặt tổng thời gian >1 ngày không đúng quy định thuộc mức 2 điểm.</td>
+            </tr>
+            <tr>
+              <td>Nghỉ từ 30 ngày</td>
+              <td><span class="badge safe">≥ 2 tháng trước</span></td>
+              <td><strong>-2</strong> nếu không đủ thời hạn</td>
+              <td>Công cụ dùng 30 ngày để quy đổi ngưỡng “1 tháng” khi tự phân loại độ dài.</td>
+            </tr>
+            <tr>
+              <td>Điểm 89–100</td>
+              <td><span class="badge safe">Chưa Mức 1</span></td>
+              <td>Mức 1 bắt đầu ở 88 điểm</td>
+              <td>77–88: M1 · 65–76: M2 · 53–64: M3 · 41–52: M4 · ≤40: M5.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <strong>Lưu ý:</strong> tài liệu không ghi rõ mọi mốc “ngày” là ngày lịch hay ngày làm việc; công cụ hiện dùng ngày lịch và phép trừ tháng theo ngày tương ứng của tháng trước. Kết quả mang tính hỗ trợ kiểm tra trước khi submit, không thay thế xác nhận từ HR/Chief/Manager. Quy định đi trễ/về sớm được ghi nhận sửa đổi ngày 17/07/2025; quy định thưởng/phạt chuyên cần ghi hiệu lực từ 01/01/2024.
+    </footer>
+  </main>
+
+  <script type="module" src="./src/app.js"></script>
+</body>
+</html>
