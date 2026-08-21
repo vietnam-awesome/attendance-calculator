@@ -13,6 +13,7 @@ Công cụ cá nhân giúp tự kiểm tra ngày dự định nghỉ có vượt
 - Hiển thị điểm sau dự kiến và Mức vi phạm 1–5.
 - Tự xác định kỳ điểm hiện tại: 01/12–31/05 hoặc 01/06–30/11.
 - Lưu lựa chọn gần nhất trong `localStorage` của trình duyệt.
+- UI responsive xây dựng bằng **Tailwind CSS v4**.
 - Không cần backend, framework hay API.
 
 ## Chạy local
@@ -45,6 +46,10 @@ npm test
 ## Preview PR
 
 Mỗi Pull Request tự động có comment **PR Preview** chứa link chạy đúng code tại commit hiện tại của PR. Link preview được cập nhật mỗi khi push commit mới.
+
+## UI
+
+Giao diện dùng Tailwind CSS v4 theo hướng mobile-first: form tối giản, kết quả nổi bật, card responsive và các nút chọn nhanh ngày nghỉ.
 
 ## Triển khai
 
