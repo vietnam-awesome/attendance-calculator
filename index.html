@@ -3,166 +3,93 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Công cụ tính điểm chuyên cần và kiểm tra ngày dự định xin nghỉ có vi phạm quy định thông báo hay không." />
-  <meta name="theme-color" content="#2f6fed" />
+  <meta name="description" content="Công cụ cá nhân giúp tính điểm chuyên cần và kiểm tra ngày dự định nghỉ có vượt mốc báo trước hay không." />
+  <meta name="theme-color" content="#0f172a" />
   <title>Tính Chuyên Cần</title>
-  <link rel="stylesheet" href="./styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <style type="text/tailwindcss">
+    @theme { --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif; }
+  </style>
 </head>
-<body>
-  <header class="hero">
-    <div class="shell hero-grid">
-      <section class="hero-main">
-        <p class="eyebrow">Attendance · Chuyên cần</p>
-        <h1>Ngày định nghỉ có làm mất điểm chuyên cần không?</h1>
-        <p class="hero-copy">
-          Nhập ngày dự định nghỉ và ngày bạn gửi yêu cầu. Công cụ sẽ tính hạn báo trước,
-          mức trừ điểm dự kiến và điểm chuyên cần còn lại sau tình huống đó.
-        </p>
-        <div class="hero-note">
-          <span>ℹ️</span>
-          <div><strong>Mặc định hiện tại: 96/100 điểm.</strong> Bạn có thể chỉnh lại khi điểm thực tế thay đổi.</div>
-        </div>
-      </section>
-
-      <aside class="summary-card" aria-label="Tóm tắt điểm hiện tại">
-        <div>
-          <div class="summary-top">
-            <div>
-              <span>Điểm hiện tại</span><br />
-              <strong id="points-badge" class="points-badge">96/100</strong>
-            </div>
-            <div style="text-align:right">
-              <span>Kỳ đánh giá</span><br />
-              <strong id="evaluation-period">—</strong>
-            </div>
+<body class="min-h-screen bg-slate-50 font-sans text-slate-900 antialiased selection:bg-blue-100 selection:text-blue-950">
+  <header class="relative overflow-hidden bg-slate-950 text-white">
+    <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.22),transparent_34%),radial-gradient(circle_at_85%_10%,rgba(16,185,129,0.14),transparent_28%)]"></div>
+    <div class="relative mx-auto max-w-6xl px-4 pb-24 pt-5 sm:px-6 lg:px-8 lg:pb-28">
+      <nav class="flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="flex size-10 items-center justify-center rounded-2xl bg-white/10 ring-1 ring-white/15 backdrop-blur">
+            <svg viewBox="0 0 24 24" fill="none" class="size-5 text-blue-300" aria-hidden="true"><path d="M8 2v3M16 2v3M3.5 9.5h17M5 4.5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-12a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="m8.5 14 2 2 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </div>
-          <div class="progress" aria-hidden="true"><div id="points-bar" style="width:96%"></div></div>
-          <p style="margin:0;color:var(--muted);font-size:.88rem">Mức kỷ luật hiện tại</p>
-          <span id="current-level" class="level-pill">Chưa hình thành mức vi phạm</span>
+          <div><div class="text-sm font-bold tracking-tight">Attendance</div><div class="text-xs text-slate-400">Công cụ cá nhân</div></div>
         </div>
-      </aside>
+        <div class="hidden items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-slate-300 backdrop-blur sm:flex"><span class="size-1.5 rounded-full bg-emerald-400"></span>Dữ liệu chỉ lưu trên thiết bị</div>
+      </nav>
+
+      <div class="mt-14 grid items-end gap-10 lg:grid-cols-[1.3fr_.7fr]">
+        <section class="max-w-3xl">
+          <div class="inline-flex items-center gap-2 rounded-full border border-blue-400/20 bg-blue-400/10 px-3 py-1.5 text-xs font-semibold text-blue-200"><span class="size-1.5 rounded-full bg-blue-300"></span>Kiểm tra nhanh trước khi nghỉ</div>
+          <h1 class="mt-5 text-4xl font-extrabold tracking-[-0.04em] text-white sm:text-5xl lg:text-6xl">Ngày định nghỉ có bị<br class="hidden sm:block" /> trừ điểm chuyên cần?</h1>
+          <p class="mt-5 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg">Chọn ngày muốn nghỉ. Hệ thống tự lấy <strong class="font-semibold text-white">hôm nay</strong> làm mốc báo trước và dự báo số điểm còn lại.</p>
+        </section>
+
+        <aside class="rounded-3xl border border-white/10 bg-white/[0.07] p-5 shadow-2xl shadow-black/10 backdrop-blur-xl sm:p-6" aria-label="Tóm tắt điểm hiện tại">
+          <div class="flex items-start justify-between gap-4">
+            <div><p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Điểm hiện tại</p><div class="mt-2 flex items-baseline gap-1"><strong id="points-badge" class="text-4xl font-extrabold tracking-tight text-white">96</strong><span class="text-sm font-semibold text-slate-400">/100</span></div></div>
+            <span id="current-level" class="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1.5 text-xs font-semibold text-emerald-200">Chưa Mức 1</span>
+          </div>
+          <div class="mt-5 h-2 overflow-hidden rounded-full bg-white/10"><div id="points-bar" class="h-full rounded-full bg-gradient-to-r from-blue-400 to-cyan-300 transition-[width] duration-300" style="width:96%"></div></div>
+          <div class="mt-4 flex items-center justify-between gap-4 text-xs text-slate-400"><span>Kỳ điểm hiện tại</span><strong id="evaluation-period" class="text-right font-semibold text-slate-200">—</strong></div>
+        </aside>
+      </div>
     </div>
   </header>
 
-  <main class="shell">
-    <section class="main-grid">
-      <div class="panel">
-        <p class="eyebrow">Bước 1</p>
-        <h2>Thông tin dự định</h2>
-        <p class="panel-subtitle">Ngày xin mặc định là hôm nay. Với nghỉ nhiều ngày, hệ thống tự chọn ngưỡng 1 tuần / 1 tháng theo độ dài kỳ nghỉ.</p>
+  <main class="relative mx-auto -mt-14 max-w-6xl px-4 pb-14 sm:px-6 lg:px-8">
+    <section class="grid items-start gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+      <div class="rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xl shadow-slate-200/40 sm:p-7">
+        <div class="flex items-start justify-between gap-4">
+          <div><p class="text-xs font-bold uppercase tracking-[0.16em] text-blue-600">Thiết lập</p><h2 class="mt-2 text-2xl font-bold tracking-tight text-slate-950">Bạn định nghỉ khi nào?</h2><p class="mt-1 text-sm leading-6 text-slate-500">Thay đổi thông tin bên dưới, kết quả được tính ngay.</p></div>
+          <div class="hidden size-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 sm:flex"><svg viewBox="0 0 24 24" fill="none" class="size-5" aria-hidden="true"><path d="M12 8v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        </div>
 
-        <form id="calculator-form">
-          <div class="form-grid">
-            <div class="field">
-              <label for="current-points">Điểm chuyên cần hiện tại</label>
-              <input id="current-points" type="number" min="0" max="100" step="1" value="96" required />
-              <small>Đầu mỗi kỳ đánh giá reset về 100 điểm.</small>
-            </div>
+        <div class="mt-6 flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+          <div class="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white text-slate-600 shadow-sm ring-1 ring-slate-200"><svg viewBox="0 0 24 24" fill="none" class="size-4" aria-hidden="true"><path d="M8 2v3M16 2v3M3.5 9.5h17M5 4.5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-12a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></div>
+          <div class="min-w-0 flex-1"><div class="text-xs font-medium text-slate-500">Mốc tính tự động</div><div class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm"><strong id="today-label" class="font-bold text-slate-900">—</strong><span class="text-slate-400">·</span><span class="text-slate-500">Hôm nay</span></div></div>
+        </div>
 
-            <div class="field">
-              <label for="event-type">Loại tình huống</label>
-              <select id="event-type">
-                <option value="leave">Nghỉ từ 1 ngày trở lên</option>
-                <option value="half">Nghỉ 1/2 ngày</option>
-                <option value="late">Đi trễ</option>
-                <option value="early">Về sớm</option>
-              </select>
-              <small id="policy-hint">Tự xác định theo độ dài kỳ nghỉ</small>
-            </div>
-
-            <div class="field">
-              <label for="request-date">Ngày gửi yêu cầu / submit form</label>
-              <input id="request-date" type="date" required />
-              <small>Đây là ngày được dùng để xét thời hạn thông báo.</small>
-            </div>
-
-            <div class="field">
-              <label for="start-date">Ngày bắt đầu nghỉ / phát sinh</label>
-              <input id="start-date" type="date" required />
-            </div>
-
-            <div class="field full" id="end-field">
-              <label for="end-date">Ngày kết thúc nghỉ</label>
-              <input id="end-date" type="date" required />
-              <small>1–6 ngày: xin trước 1 tuần · 7–29 ngày: xin trước 1 tháng · từ 30 ngày: xin trước 2 tháng.</small>
-            </div>
-
-            <div class="field full">
-              <div class="checkbox-row">
-                <input id="no-contact" type="checkbox" />
-                <label for="no-contact">
-                  <strong>Không liên lạc / không thông báo.</strong><br />
-                  Chọn mục này nếu muốn mô phỏng trường hợp không báo trước. Quy định áp dụng mức 2 điểm.
-                </label>
-              </div>
-            </div>
+        <form id="calculator-form" class="mt-6 space-y-5">
+          <div class="grid gap-5 sm:grid-cols-2">
+            <label class="block"><span class="mb-2 block text-sm font-semibold text-slate-700">Điểm hiện tại</span><div class="relative"><input id="current-points" type="number" min="0" max="100" step="1" value="96" required class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 pr-14 text-base font-semibold text-slate-950 outline-none transition placeholder:text-slate-400 hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" /><span class="pointer-events-none absolute inset-y-0 right-4 flex items-center text-sm font-medium text-slate-400">/100</span></div></label>
+            <label class="block"><span class="mb-2 block text-sm font-semibold text-slate-700">Tình huống</span><select id="event-type" class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"><option value="leave">Nghỉ 1 ngày</option><option value="leave-multi">Nghỉ nhiều ngày</option><option value="half">Nghỉ 1/2 ngày</option><option value="late">Đi trễ</option><option value="early">Về sớm</option></select><span id="policy-hint" class="mt-2 block text-xs leading-5 text-slate-500">Nghỉ 1 ngày cần báo trước ít nhất 1 tuần</span></label>
           </div>
 
-          <div class="form-actions">
-            <button class="primary-btn" type="submit">Tính chuyên cần</button>
-            <button class="ghost-btn" type="button" id="reset-btn">Đặt lại về 96 điểm</button>
+          <div class="rounded-2xl border border-blue-100 bg-blue-50/70 p-4 sm:p-5">
+            <div class="flex items-center justify-between gap-3"><div><label for="start-date" class="block text-sm font-bold text-slate-900">Ngày muốn nghỉ</label><p class="mt-1 text-xs text-slate-500">Chọn ngày dự định phát sinh.</p></div><span class="rounded-full bg-white px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-blue-600 shadow-sm ring-1 ring-blue-100">Quan trọng</span></div>
+            <input id="start-date" type="date" required class="mt-4 h-12 w-full rounded-2xl border border-blue-200 bg-white px-4 text-base font-bold text-slate-950 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" />
+            <div id="quick-date-buttons" class="mt-3 flex flex-wrap gap-2"><button type="button" data-offset="1" class="rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-50">Ngày mai</button><button type="button" data-offset="2" class="rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-50">+2 ngày</button><button type="button" data-offset="7" class="rounded-xl border border-blue-200 bg-white px-3 py-2 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-50">+7 ngày</button></div>
           </div>
+
+          <div id="end-field" hidden><label for="end-date" class="mb-2 block text-sm font-semibold text-slate-700">Nghỉ đến ngày nào?</label><input id="end-date" type="date" class="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-base font-semibold text-slate-950 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10" /><p class="mt-2 text-xs leading-5 text-slate-500">Mốc báo trước sẽ tự thay đổi theo tổng số ngày nghỉ.</p></div>
+
+          <details class="group rounded-2xl border border-slate-200 bg-white open:bg-slate-50/70"><summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 text-sm font-semibold text-slate-700 marker:hidden">Tùy chọn khác<svg viewBox="0 0 24 24" fill="none" class="size-4 text-slate-400 transition group-open:rotate-180" aria-hidden="true"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></summary><div class="border-t border-slate-200 px-4 py-4"><label class="flex cursor-pointer items-start gap-3"><input id="no-contact" type="checkbox" class="mt-0.5 size-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" /><span><span class="block text-sm font-semibold text-slate-800">Mô phỏng trường hợp không báo trước</span><span class="mt-1 block text-xs leading-5 text-slate-500">Chỉ bật nếu muốn xem mức trừ trong trường hợp hoàn toàn không báo.</span></span></label></div></details>
+
+          <div class="flex items-center justify-between gap-3 border-t border-slate-100 pt-5"><p class="text-xs leading-5 text-slate-400">Kết quả cập nhật tự động.</p><button type="button" id="reset-btn" class="rounded-xl px-3 py-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800">Khôi phục mặc định</button></div>
         </form>
       </div>
 
-      <div id="result" class="result-card" aria-live="polite"></div>
+      <div id="result" class="min-h-[420px] rounded-3xl border border-slate-200/80 bg-white p-5 shadow-xl shadow-slate-200/40 sm:p-7 lg:sticky lg:top-6" aria-live="polite"></div>
     </section>
 
-    <section class="rules-card">
-      <div class="rules-header">
-        <p class="eyebrow">Quy tắc đang dùng</p>
-        <h2>Tóm tắt từ bộ tài liệu chuyên cần</h2>
-        <p>Trang chỉ dự báo theo thời hạn thông báo và điểm chuyên cần; phê duyệt của cấp trên vẫn là điều kiện riêng.</p>
-      </div>
-      <div class="rules-table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Tình huống</th>
-              <th>Thời hạn hợp lệ</th>
-              <th>Nếu sai hạn</th>
-              <th>Ghi chú</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Đi trễ / về sớm / nghỉ 1/2 ngày</td>
-              <td><span class="badge safe">≥ 2 ngày trước</span></td>
-              <td>Trước 1 ngày: <strong>-1</strong>; cùng ngày/không báo: <strong>-2</strong></td>
-              <td>Trường hợp có kế hoạch phải xin trước ít nhất 2 ngày.</td>
-            </tr>
-            <tr>
-              <td>Nghỉ 1–6 ngày</td>
-              <td><span class="badge safe">≥ 1 tuần trước</span></td>
-              <td>1 ngày nghỉ: có thể <strong>-1/-2</strong>; nghỉ >1 ngày sai quy định: <strong>-2</strong></td>
-              <td>Ngày submit form được xem là ngày xin nghỉ.</td>
-            </tr>
-            <tr>
-              <td>Nghỉ 7–29 ngày</td>
-              <td><span class="badge safe">≥ 1 tháng trước</span></td>
-              <td><strong>-2</strong> nếu không đủ thời hạn</td>
-              <td>Vắng mặt tổng thời gian >1 ngày không đúng quy định thuộc mức 2 điểm.</td>
-            </tr>
-            <tr>
-              <td>Nghỉ từ 30 ngày</td>
-              <td><span class="badge safe">≥ 2 tháng trước</span></td>
-              <td><strong>-2</strong> nếu không đủ thời hạn</td>
-              <td>Công cụ dùng 30 ngày để quy đổi ngưỡng “1 tháng” khi tự phân loại độ dài.</td>
-            </tr>
-            <tr>
-              <td>Điểm 89–100</td>
-              <td><span class="badge safe">Chưa Mức 1</span></td>
-              <td>Mức 1 bắt đầu ở 88 điểm</td>
-              <td>77–88: M1 · 65–76: M2 · 53–64: M3 · 41–52: M4 · ≤40: M5.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+    <section class="mt-8 rounded-3xl border border-slate-200/80 bg-white p-5 shadow-sm sm:p-7">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><p class="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Mốc cần nhớ</p><h2 class="mt-2 text-xl font-bold tracking-tight text-slate-950 sm:text-2xl">Tóm tắt cách tính</h2></div><p class="max-w-xl text-sm leading-6 text-slate-500">Chỉ là công cụ tự tham khảo theo bộ quy tắc đã cấu hình. Không gửi dữ liệu hoặc yêu cầu tới bên nào.</p></div>
+      <div class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><div class="rounded-2xl border border-slate-200 bg-slate-50 p-4"><div class="text-xs font-semibold text-slate-500">Đi trễ / về sớm / nửa ngày</div><div class="mt-2 text-lg font-extrabold tracking-tight text-slate-950">≥ 2 ngày</div><div class="mt-1 text-xs text-slate-400">Mốc báo trước</div></div><div class="rounded-2xl border border-slate-200 bg-slate-50 p-4"><div class="text-xs font-semibold text-slate-500">Nghỉ 1–6 ngày</div><div class="mt-2 text-lg font-extrabold tracking-tight text-slate-950">≥ 1 tuần</div><div class="mt-1 text-xs text-slate-400">Mốc báo trước</div></div><div class="rounded-2xl border border-slate-200 bg-slate-50 p-4"><div class="text-xs font-semibold text-slate-500">Nghỉ 7–29 ngày</div><div class="mt-2 text-lg font-extrabold tracking-tight text-slate-950">≥ 1 tháng</div><div class="mt-1 text-xs text-slate-400">Mốc báo trước</div></div><div class="rounded-2xl border border-slate-200 bg-slate-50 p-4"><div class="text-xs font-semibold text-slate-500">Nghỉ từ 30 ngày</div><div class="mt-2 text-lg font-extrabold tracking-tight text-slate-950">≥ 2 tháng</div><div class="mt-1 text-xs text-slate-400">Mốc báo trước</div></div></div>
+      <div class="mt-6 border-t border-slate-100 pt-5"><div class="flex flex-wrap items-center gap-2 text-xs font-semibold"><span class="mr-1 text-slate-400">Vùng điểm:</span><span class="rounded-full bg-emerald-50 px-3 py-1.5 text-emerald-700 ring-1 ring-inset ring-emerald-200">89–100 · Chưa M1</span><span class="rounded-full bg-blue-50 px-3 py-1.5 text-blue-700 ring-1 ring-inset ring-blue-200">77–88 · M1</span><span class="rounded-full bg-amber-50 px-3 py-1.5 text-amber-700 ring-1 ring-inset ring-amber-200">65–76 · M2</span><span class="rounded-full bg-orange-50 px-3 py-1.5 text-orange-700 ring-1 ring-inset ring-orange-200">53–64 · M3</span><span class="rounded-full bg-rose-50 px-3 py-1.5 text-rose-700 ring-1 ring-inset ring-rose-200">41–52 · M4</span><span class="rounded-full bg-slate-100 px-3 py-1.5 text-slate-700 ring-1 ring-inset ring-slate-200">≤40 · M5</span></div></div>
     </section>
 
-    <footer class="footer">
-      <strong>Lưu ý:</strong> tài liệu không ghi rõ mọi mốc “ngày” là ngày lịch hay ngày làm việc; công cụ hiện dùng ngày lịch và phép trừ tháng theo ngày tương ứng của tháng trước. Kết quả mang tính hỗ trợ kiểm tra trước khi submit, không thay thế xác nhận từ HR/Chief/Manager. Quy định đi trễ/về sớm được ghi nhận sửa đổi ngày 17/07/2025; quy định thưởng/phạt chuyên cần ghi hiệu lực từ 01/01/2024.
-    </footer>
+    <footer class="mt-6 flex flex-col gap-3 rounded-2xl border border-slate-200/70 bg-white/70 px-5 py-4 text-xs leading-5 text-slate-500 sm:flex-row sm:items-center sm:justify-between"><div class="flex items-start gap-2"><svg viewBox="0 0 24 24" fill="none" class="mt-0.5 size-4 shrink-0 text-slate-400" aria-hidden="true"><path d="M12 8v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>Công cụ dùng ngày lịch; phép trừ tháng theo ngày tương ứng và tự điều chỉnh ngày cuối tháng.</span></div><span class="shrink-0 font-medium text-slate-400">Local-only · No backend</span></footer>
   </main>
 
   <script type="module" src="./src/app.js"></script>

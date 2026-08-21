@@ -60,6 +60,17 @@ test("one-day leave requested six days before costs one point", () => {
   assert.equal(result.deduction, 1);
 });
 
+test("one-day leave requested today for tomorrow costs one point", () => {
+  const result = run({
+    type: "leave",
+    requestDate: d("2026-08-21"),
+    startDate: d("2026-08-22"),
+    endDate: d("2026-08-22"),
+  });
+  assert.equal(result.deduction, 1);
+  assert.equal(result.projectedPoints, 95);
+});
+
 test("two-day leave requested late costs two points", () => {
   const result = run({
     type: "leave",
