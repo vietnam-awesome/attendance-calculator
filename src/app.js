@@ -26,9 +26,16 @@ const currentLevelEl = $("#current-level");
 const policyHint = $("#policy-hint");
 const quickDateButtons = $("#quick-date-buttons");
 const referenceTodayButton = $("#reference-today-btn");
+const calendarGrid = $("#calendar-grid");
+const calendarTitle = $("#calendar-title");
+const calendarMeta = $("#calendar-meta");
+const calendarPrev = $("#calendar-prev");
+const calendarNext = $("#calendar-next");
+const calendarReset = $("#calendar-reset");
 
 const STORAGE_KEY = "attendance-calculator-v3";
 const DAY_MS = 24 * 60 * 60 * 1000;
+let calendarViewDate = null;
 
 function localToday() {
   const now = new Date();
@@ -41,6 +48,14 @@ function addDays(date, days) {
   return next;
 }
 
+function addMonths(date, months) {
+  return new Date(date.getFullYear(), date.getMonth() + months, 1);
+}
+
+function startOfMonth(date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
 function utcDayNumber(date) {
   return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / DAY_MS;
 }
@@ -48,6 +63,28 @@ function utcDayNumber(date) {
 function calendarDaysBetween(later, earlier) {
   if (!later || !earlier) return 0;
   return Math.round(utcDayNumber(later) - utcDayNumber(earlier));
+}
+
+function sameDate(a, b) {
+  return Boolean(
+    a &&
+      b &&
+      a.getFullYear() === b.getFullYear() &&
+      a.getMonth() === b.getMonth() &&
+      a.getDate() === b.getDate(),
+  );
+}
+
+function dateInRange(date, start, end) {
+  if (!date || !start || !end) return false;
+  return utcDayNumber(date) >= utcDayNumber(start) && utcDayNumber(date) <= utcDayNumber(end);
+}
+
+function formatMonth(date) {
+  return new Intl.DateTimeFormat("vi-VN", {
+    month: "long",
+    year: "numeric",
+  }).format(date);
 }
 
 function loadState() {
@@ -71,14 +108,17 @@ function loadState() {
 }
 
 function saveState() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify({
-    currentPoints: Number(pointsInput.value),
-    type: typeInput.value,
-    requestDate: requestInput.value,
-    startDate: startInput.value,
-    endDate: endInput.value,
-    noContact: noContactInput.checked,
-  }));
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify({
+      currentPoints: Number(pointsInput.value),
+      type: typeInput.value,
+      requestDate: requestInput.value,
+      startDate: startInput.value,
+      endDate: endInput.value,
+      noContact: noContactInput.checked,
+    }),
+  );
 }
 
 function setInitialState() {
@@ -89,6 +129,7 @@ function setInitialState() {
   startInput.value = state.startDate;
   endInput.value = state.endDate;
   noContactInput.checked = state.noContact;
+  calendarViewDate = startOfMonth(parseISODate(state.startDate) || localToday());
   toggleEndDate();
 }
 
@@ -195,9 +236,11 @@ function renderResult(data, requestDate, startDate) {
 
     <div class="mt-7 flex items-center gap-4 rounded-3xl border border-slate-100 bg-slate-50/70 p-5 sm:p-6">
       <div class="flex size-12 shrink-0 items-center justify-center rounded-2xl ring-1 ${iconClass}">
-        ${isSafe
-          ? `<svg viewBox="0 0 24 24" fill="none" class="size-6" aria-hidden="true"><path d="m5 12.5 4.2 4.2L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
-          : `<svg viewBox="0 0 24 24" fill="none" class="size-6" aria-hidden="true"><path d="M12 8v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`}
+        ${
+          isSafe
+            ? `<svg viewBox="0 0 24 24" fill="none" class="size-6" aria-hidden="true"><path d="m5 12.5 4.2 4.2L19 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+            : `<svg viewBox="0 0 24 24" fill="none" class="size-6" aria-hidden="true"><path d="M12 8v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`
+        }
       </div>
       <div class="min-w-0">
         <div class="text-xs font-semibold uppercase tracking-wide text-slate-400">Điểm sau dự kiến</div>
@@ -243,6 +286,91 @@ function renderResult(data, requestDate, startDate) {
   `;
 }
 
+function calendarChip(label, value, tone) {
+  const tones = {
+    blue: "border-blue-100 bg-blue-50 text-blue-700",
+    amber: "border-amber-100 bg-amber-50 text-amber-700",
+    violet: "border-violet-100 bg-violet-50 text-violet-700",
+    slate: "border-slate-200 bg-slate-50 text-slate-600",
+  };
+  return `<span class="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold ${tones[tone] || tones.slate}"><span class="font-medium opacity-70">${label}</span>${value}</span>`;
+}
+
+function renderCalendar(data, requestDate, startDate, endDate) {
+  const focusDate = startDate || requestDate || localToday();
+  if (!calendarViewDate) calendarViewDate = startOfMonth(focusDate);
+
+  const viewMonth = startOfMonth(calendarViewDate);
+  const deadline = data?.valid ? data.deadline : null;
+  const actualEndDate = endDate || startDate;
+  const noticeDays = requestDate && startDate ? Math.max(0, calendarDaysBetween(startDate, requestDate)) : null;
+
+  calendarTitle.textContent = formatMonth(viewMonth);
+
+  const leaveLabel =
+    startDate && actualEndDate && !sameDate(startDate, actualEndDate)
+      ? `${formatDateVN(startDate)} → ${formatDateVN(actualEndDate)}`
+      : startDate
+        ? formatDateVN(startDate)
+        : "—";
+
+  calendarMeta.innerHTML = [
+    calendarChip("Mốc tính", requestDate ? formatDateVN(requestDate) : "—", "blue"),
+    calendarChip("Hạn chót", deadline ? formatDateVN(deadline) : "—", "amber"),
+    calendarChip("Nghỉ", leaveLabel, "violet"),
+    calendarChip("Báo trước", noContactInput.checked ? "Không báo" : noticeDays === null ? "—" : `${noticeDays} ngày`, "slate"),
+  ].join("");
+
+  const firstDayOffset = (viewMonth.getDay() + 6) % 7;
+  const gridStart = addDays(viewMonth, -firstDayOffset);
+  const today = localToday();
+  const cells = [];
+
+  for (let index = 0; index < 42; index += 1) {
+    const date = addDays(gridStart, index);
+    const inCurrentMonth = date.getMonth() === viewMonth.getMonth() && date.getFullYear() === viewMonth.getFullYear();
+    const isToday = sameDate(date, today);
+    const isReference = sameDate(date, requestDate);
+    const isDeadline = sameDate(date, deadline);
+    const isLeave = dateInRange(date, startDate, actualEndDate);
+
+    const containerClasses = [
+      "relative min-h-[62px] rounded-xl border p-1.5 transition sm:min-h-[82px] sm:p-2.5",
+      inCurrentMonth ? "border-slate-100 bg-white" : "border-transparent bg-slate-50/60 text-slate-300",
+    ];
+
+    if (isLeave) containerClasses.push("border-violet-100 bg-violet-50/80");
+    if (isReference) containerClasses.push("ring-2 ring-inset ring-blue-500");
+    if (isDeadline) containerClasses.push("border-amber-300 bg-amber-50");
+    if (isToday) containerClasses.push("shadow-[inset_0_0_0_1px_rgba(100,116,139,.45)]");
+
+    const markerDots = [
+      isReference ? '<span class="size-1.5 rounded-full bg-blue-500 sm:size-2" title="Mốc tính"></span>' : "",
+      isDeadline ? '<span class="size-1.5 rounded-full bg-amber-500 sm:size-2" title="Hạn chót"></span>' : "",
+      isLeave ? '<span class="size-1.5 rounded-full bg-violet-500 sm:size-2" title="Ngày nghỉ"></span>' : "",
+    ].join("");
+
+    const labels = [];
+    if (isReference) labels.push('<span class="hidden rounded-md bg-blue-100 px-1.5 py-0.5 text-[9px] font-bold text-blue-700 sm:inline">Mốc tính</span>');
+    if (isDeadline) labels.push('<span class="hidden rounded-md bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold text-amber-700 sm:inline">Hạn chót</span>');
+    if (isLeave && sameDate(date, startDate)) labels.push('<span class="hidden rounded-md bg-violet-100 px-1.5 py-0.5 text-[9px] font-bold text-violet-700 sm:inline">Nghỉ</span>');
+
+    const dayNumberClass = isToday ? "bg-slate-900 text-white" : inCurrentMonth ? "text-slate-800" : "text-slate-300";
+
+    cells.push(`
+      <div class="${containerClasses.join(" ")}" title="${formatDateVN(date)}">
+        <div class="flex items-start justify-between gap-1">
+          <span class="flex size-6 items-center justify-center rounded-lg text-[11px] font-bold sm:size-7 sm:text-xs ${dayNumberClass}">${date.getDate()}</span>
+          <span class="mt-1 flex gap-0.5">${markerDots}</span>
+        </div>
+        <div class="mt-2 flex flex-wrap gap-1">${labels.join("")}</div>
+      </div>
+    `);
+  }
+
+  calendarGrid.innerHTML = cells.join("");
+}
+
 function calculate() {
   const requestDate = parseISODate(requestInput.value);
   const startDate = parseISODate(startInput.value);
@@ -251,6 +379,7 @@ function calculate() {
 
   if (!requestDate) {
     renderError("Vui lòng chọn mốc tính hợp lệ.");
+    renderCalendar(null, null, startDate, endDate);
     return;
   }
 
@@ -265,6 +394,7 @@ function calculate() {
 
   renderTopSummary(pointsInput.value, requestDate);
   renderResult(data, requestDate, startDate);
+  renderCalendar(data, requestDate, startDate, endDate);
   saveState();
 }
 
@@ -277,6 +407,8 @@ startInput.addEventListener("change", () => {
   if (typeInput.value === "leave-multi" && (!endInput.value || endInput.value < startInput.value)) {
     endInput.value = startInput.value;
   }
+  const startDate = parseISODate(startInput.value);
+  if (startDate) calendarViewDate = startOfMonth(startDate);
   calculate();
 });
 
@@ -287,16 +419,35 @@ quickDateButtons.addEventListener("click", (event) => {
   const baseDate = parseISODate(requestInput.value) || localToday();
   const targetDate = addDays(baseDate, Number(button.dataset.offset));
   startInput.value = toISODate(targetDate);
+
   if (typeInput.value !== "leave-multi") {
     endInput.value = startInput.value;
   } else if (!endInput.value || endInput.value < startInput.value) {
     endInput.value = startInput.value;
   }
+
+  calendarViewDate = startOfMonth(targetDate);
   calculate();
 });
 
 referenceTodayButton.addEventListener("click", () => {
   requestInput.value = toISODate(localToday());
+  calculate();
+});
+
+calendarPrev.addEventListener("click", () => {
+  calendarViewDate = addMonths(calendarViewDate || startOfMonth(localToday()), -1);
+  calculate();
+});
+
+calendarNext.addEventListener("click", () => {
+  calendarViewDate = addMonths(calendarViewDate || startOfMonth(localToday()), 1);
+  calculate();
+});
+
+calendarReset.addEventListener("click", () => {
+  const startDate = parseISODate(startInput.value) || parseISODate(requestInput.value) || localToday();
+  calendarViewDate = startOfMonth(startDate);
   calculate();
 });
 
@@ -316,6 +467,7 @@ $("#reset-btn").addEventListener("click", () => {
   startInput.value = toISODate(tomorrow);
   endInput.value = startInput.value;
   noContactInput.checked = false;
+  calendarViewDate = startOfMonth(tomorrow);
   toggleEndDate();
   calculate();
 });
