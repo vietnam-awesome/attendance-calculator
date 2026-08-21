@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Công cụ tính điểm chuyên cần và kiểm tra ngày dự định xin nghỉ có vi phạm quy định thông báo hay không." />
+  <meta name="description" content="Công cụ cá nhân giúp tính điểm chuyên cần và kiểm tra ngày dự định nghỉ có vượt mốc báo trước hay không." />
   <meta name="theme-color" content="#2f6fed" />
   <title>Tính Chuyên Cần</title>
   <link rel="stylesheet" href="./styles.css" />
@@ -15,12 +15,12 @@
         <p class="eyebrow">Attendance · Chuyên cần</p>
         <h1>Ngày mai nghỉ có bị trừ điểm không?</h1>
         <p class="hero-copy">
-          Chỉ cần chọn <strong>ngày muốn nghỉ</strong>. Hệ thống tự lấy hôm nay làm ngày gửi yêu cầu,
-          rồi tính hạn báo trước và điểm chuyên cần còn lại.
+          Chỉ cần chọn <strong>ngày muốn nghỉ</strong>. Hệ thống tự lấy hôm nay làm mốc tính báo trước,
+          rồi dự báo điểm chuyên cần còn lại.
         </p>
         <div class="hero-note">
           <span>ℹ️</span>
-          <div><strong>Điểm hiện tại mặc định: 96/100.</strong> Không cần nhập “ngày submit form” nữa.</div>
+          <div><strong>Điểm hiện tại mặc định: 96/100.</strong> Ngày hiện tại được lấy tự động làm mốc tính.</div>
         </div>
       </section>
 
@@ -32,12 +32,12 @@
               <strong id="points-badge" class="points-badge">96/100</strong>
             </div>
             <div style="text-align:right">
-              <span>Kỳ đánh giá</span><br />
+              <span>Kỳ điểm</span><br />
               <strong id="evaluation-period">—</strong>
             </div>
           </div>
           <div class="progress" aria-hidden="true"><div id="points-bar" style="width:96%"></div></div>
-          <p style="margin:0;color:var(--muted);font-size:.88rem">Mức kỷ luật hiện tại</p>
+          <p style="margin:0;color:var(--muted);font-size:.88rem">Trạng thái điểm hiện tại</p>
           <span id="current-level" class="level-pill">Chưa hình thành mức vi phạm</span>
         </div>
       </aside>
@@ -52,7 +52,7 @@
         <div class="today-banner">
           <span>Hôm nay</span>
           <strong id="today-label">—</strong>
-          <small>Được dùng tự động làm ngày gửi yêu cầu</small>
+          <small>Được dùng tự động làm mốc tính báo trước</small>
         </div>
 
         <form id="calculator-form">
@@ -63,7 +63,7 @@
             </div>
 
             <div class="field">
-              <label for="event-type">Bạn muốn xin gì?</label>
+              <label for="event-type">Bạn muốn kiểm tra gì?</label>
               <select id="event-type">
                 <option value="leave">Nghỉ 1 ngày</option>
                 <option value="leave-multi">Nghỉ nhiều ngày</option>
@@ -92,7 +92,7 @@
             <div class="checkbox-row">
               <input id="no-contact" type="checkbox" />
               <label for="no-contact">
-                <strong>Không báo / không liên lạc.</strong><br />
+                <strong>Không báo trước.</strong><br />
                 Chỉ bật khi muốn mô phỏng trường hợp hoàn toàn không thông báo trước.
               </label>
             </div>
@@ -110,16 +110,16 @@
     <section class="rules-card">
       <div class="rules-header">
         <p class="eyebrow">Quy tắc đang dùng</p>
-        <h2>Tóm tắt từ bộ tài liệu chuyên cần</h2>
-        <p>Trang chỉ dự báo theo thời hạn thông báo và điểm chuyên cần; phê duyệt của cấp trên vẫn là điều kiện riêng.</p>
+        <h2>Tóm tắt cách tính chuyên cần</h2>
+        <p>Trang chỉ giúp bạn tự kiểm tra thời hạn báo trước và điểm dự kiến. Không gửi dữ liệu hay yêu cầu tới bất kỳ bên nào.</p>
       </div>
       <div class="rules-table-wrap">
         <table>
           <thead>
             <tr>
               <th>Tình huống</th>
-              <th>Thời hạn hợp lệ</th>
-              <th>Nếu sai hạn</th>
+              <th>Mốc báo trước</th>
+              <th>Nếu quá hạn</th>
               <th>Ghi chú</th>
             </tr>
           </thead>
@@ -128,19 +128,19 @@
               <td>Đi trễ / về sớm / nghỉ 1/2 ngày</td>
               <td><span class="badge safe">≥ 2 ngày trước</span></td>
               <td>Trước 1 ngày: <strong>-1</strong>; cùng ngày/không báo: <strong>-2</strong></td>
-              <td>Trường hợp có kế hoạch phải xin trước ít nhất 2 ngày.</td>
+              <td>Nếu đã có kế hoạch, mốc báo trước tối thiểu là 2 ngày.</td>
             </tr>
             <tr>
               <td>Nghỉ 1–6 ngày</td>
               <td><span class="badge safe">≥ 1 tuần trước</span></td>
-              <td>1 ngày nghỉ: có thể <strong>-1/-2</strong>; nghỉ &gt;1 ngày sai quy định: <strong>-2</strong></td>
-              <td>Hệ thống tự lấy ngày hiện tại làm ngày gửi yêu cầu.</td>
+              <td>1 ngày nghỉ: có thể <strong>-1/-2</strong>; nghỉ &gt;1 ngày sai mốc: <strong>-2</strong></td>
+              <td>Hệ thống tự lấy ngày hiện tại làm mốc tính báo trước.</td>
             </tr>
             <tr>
               <td>Nghỉ 7–29 ngày</td>
               <td><span class="badge safe">≥ 1 tháng trước</span></td>
               <td><strong>-2</strong> nếu không đủ thời hạn</td>
-              <td>Vắng mặt tổng thời gian &gt;1 ngày không đúng quy định thuộc mức 2 điểm.</td>
+              <td>Nghỉ tổng thời gian &gt;1 ngày nhưng không đủ thời hạn thuộc mức trừ 2 điểm.</td>
             </tr>
             <tr>
               <td>Nghỉ từ 30 ngày</td>
@@ -160,7 +160,7 @@
     </section>
 
     <footer class="footer">
-      <strong>Lưu ý:</strong> tài liệu không ghi rõ mọi mốc “ngày” là ngày lịch hay ngày làm việc; công cụ hiện dùng ngày lịch và phép trừ tháng theo ngày tương ứng của tháng trước. Kết quả mang tính hỗ trợ kiểm tra trước khi submit, không thay thế xác nhận từ HR/Chief/Manager. Quy định đi trễ/về sớm được ghi nhận sửa đổi ngày 17/07/2025; quy định thưởng/phạt chuyên cần ghi hiệu lực từ 01/01/2024.
+      <strong>Lưu ý:</strong> công cụ hiện dùng ngày lịch và phép trừ tháng theo ngày tương ứng của tháng trước. Kết quả chỉ để tự tham khảo theo bộ quy tắc đã cấu hình. Toàn bộ dữ liệu nhập được xử lý trong trình duyệt và không gửi tới máy chủ.
     </footer>
   </main>
 
