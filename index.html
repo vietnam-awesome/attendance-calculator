@@ -284,12 +284,24 @@
         <div class="border-b border-slate-100 px-4 py-3.5 sm:px-5">
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div><p class="text-[10px] font-bold uppercase tracking-[.14em] text-violet-600">Calendar overview</p><h2 class="mt-1 text-lg font-bold tracking-tight text-slate-950">Chọn ngày nghỉ trên lịch</h2><p class="mt-0.5 text-xs leading-5 text-slate-400">Tự mở tháng hiện tại; ngày trước mốc tính được làm mờ và ngày nghỉ có màu riêng.</p></div>
-            <div class="flex items-center gap-1.5 self-start sm:self-auto">
-              <button type="button" id="calendar-prev" aria-label="Tháng trước" class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"><svg viewBox="0 0 20 20" fill="none" class="size-3.5"><path d="m12.5 15-5-5 5-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-              <div id="calendar-title" class="min-w-32 text-center text-xs font-bold capitalize text-slate-800">—</div>
+            <div class="flex flex-wrap items-center gap-1.5 self-start sm:self-auto">
+              <button type="button" id="calendar-prev" aria-label="Tháng trước" title="Không thể quay về trước tháng hiện tại" class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-900 disabled:cursor-not-allowed disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-300 disabled:opacity-60"><svg viewBox="0 0 20 20" fill="none" class="size-3.5"><path d="m12.5 15-5-5 5-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              <div id="calendar-title" class="min-w-28 text-center text-xs font-bold capitalize text-slate-800">—</div>
               <button type="button" id="calendar-next" aria-label="Tháng sau" class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"><svg viewBox="0 0 20 20" fill="none" class="size-3.5"><path d="m7.5 15 5-5-5-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-              <button type="button" id="calendar-reset" title="Quay về và làm nổi bật ngày nghỉ đang chọn" class="ml-1 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-[10px] font-semibold text-slate-500 transition hover:bg-slate-50 hover:text-slate-900">Về ngày đã chọn</button>
+              <label class="ml-1 flex h-8 items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2 text-[10px] font-semibold text-slate-600" title="Chuyển nhanh tháng và năm, chỉ từ tháng hiện tại">
+                <span class="hidden sm:inline">Tháng</span>
+                <input id="calendar-month-jump" aria-label="Chọn nhanh tháng và năm" type="month" max="2100-12" class="w-[120px] max-w-[34vw] cursor-pointer bg-transparent text-[11px] font-bold text-slate-700 outline-none focus:text-blue-700" />
+              </label>
+              <button type="button" id="calendar-reset" title="Chuyển đến tháng chứa ngày đang chọn" class="ml-1 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-[10px] font-semibold text-slate-500 transition hover:bg-slate-50 hover:text-slate-900">Ngày đã chọn</button>
             </div>
+          </div>
+          <div id="calendar-quick-actions" aria-label="Chọn nhanh ngày và tháng" class="mt-3 flex flex-wrap items-center gap-1.5">
+            <span class="mr-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">Chọn nhanh</span>
+            <button type="button" data-cal-quick="today" class="rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-[11px] font-semibold text-blue-700 transition hover:bg-blue-100">Tháng này</button>
+            <button type="button" data-cal-quick="safe" class="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100">Ngày an toàn gần nhất</button>
+            <button type="button" data-cal-quick="7" class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-50">+7 ngày</button>
+            <button type="button" data-cal-quick="14" class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-50">+14 ngày</button>
+            <button type="button" data-cal-quick="next-month" class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-50">Tháng sau</button>
           </div>
           <div id="calendar-meta" class="mt-2.5 flex flex-wrap gap-1.5"></div>
         </div>
