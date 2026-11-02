@@ -12,6 +12,19 @@ function iso(date) {
     : "";
 }
 
+function parseLocalISO(value, isMonth = false) {
+  const pattern = isMonth ? /^(\\d{4})-(\\d{2})$/ : /^(\\d{4})-(\\d{2})-(\\d{2})$/;
+  const match = typeof value === "string" ? value.match(pattern) : null;
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = isMonth ? 1 : Number(match[3]);
+  const parsed = new Date(year, month - 1, day);
+  if (!validDate(parsed) || parsed.getFullYear() !== year ||
+      parsed.getMonth() + 1 !== month || parsed.getDate() !== day) return null;
+  return parsed;
+}
+
 function selectedValue(picker, format) {
   return picker.selectedDates?.[0] ? picker.formatDate(picker.selectedDates[0], format) : "";
 }
@@ -20,7 +33,8 @@ function synchronizeDate(picker, canonicalValue, format) {
   if (!picker) return;
   const value = canonicalValue || "";
   if (selectedValue(picker, format) !== value) {
-    picker.setDate(value, false, format);
+    const parsed = parseLocalISO(value, format === "Y-m");
+    picker.setDate(parsed || "", false);
   }
 
   // Flatpickr's altInput is a *different DOM input*. The underlying canonical
@@ -66,12 +80,12 @@ export function initDatePickers({
   const configs = {
     request: { onChange: () => handlers.onRequest?.() },
     start: {
-      minDate: iso(getToday()),
+      minDate: getToday(),
       disable: [(date) => !isLeaveCandidateDay(date)],
       onChange: () => handlers.onStart?.(),
     },
     end: {
-      minDate: iso(getToday()),
+      minDate: getToday(),
       onChange: () => handlers.onEnd?.(),
     },
   };
@@ -84,13 +98,19 @@ export function initDatePickers({
       // Preserve original native date value. Flatpickr handles type="date"
       // natively and hides the original only *after* it has read the ISO date.
       const originalType = element.type;
-      const picker = flatpickr(element, { ...common, ...settings, defaultDate: currentValue || undefined });
+      const picker = flatpickr(element, {
+        ...common, ...settings,
+        defaultDate: parseLocalISO(currentValue) || undefined,
+      });
       if (!picker || typeof picker.setDate !== "function") {
         element.type = originalType;
         continue;
       }
       pickers[key] = picker;
       synchronizeDate(picker, currentValue, "Y-m-d");
+      if (currentValue && (!picker.selectedDates?.length || !element.value)) {
+        throw new Error("Flatpickr date initialization did not preserve the selected date");
+      }
     } catch {
       // The original controls remain usable; never crash the entire planner
       // just because an optional date picker fails to initialize.
@@ -118,7 +138,7 @@ export function initDatePickers({
         minDate: new Date(getToday().getFullYear(), getToday().getMonth(), 1),
         maxDate: new Date(2100, 11, 31),
         plugins: [new monthSelectPlugin({ shorthand: false, dateFormat: "Y-m", altFormat: "m/Y" })],
-        defaultDate: currentValue || undefined,
+        defaultDate: parseLocalISO(currentValue, true) || undefined,
         onReady: (_, __, fp) => {
           fp.altInput?.classList.add("app-date-picker", "app-month-picker");
           fp.altInput?.setAttribute("aria-label", "Chọn tháng và năm");
@@ -131,6 +151,9 @@ export function initDatePickers({
       } else {
         pickers.month = picker;
         synchronizeDate(picker, currentValue, "Y-m");
+        if (currentValue && (!picker.selectedDates?.length || !element.value)) {
+          throw new Error("Flatpickr month initialization did not preserve the selected month");
+        }
       }
     } catch {
       if (!element._flatpickr) {
@@ -143,10 +166,10 @@ export function initDatePickers({
   return {
     sync({ request, start, end, month, minStart, minEnd, minMonth } = {}) {
       if (pickers.start && minStart && iso(pickers.start.config.minDate) !== minStart) {
-        pickers.start.set("minDate", minStart);
+        pickers.start.set("minDate", parseLocalISO(minStart));
       }
       if (pickers.end && minEnd && iso(pickers.end.config.minDate) !== minEnd) {
-        pickers.end.set("minDate", minEnd);
+        pickers.end.set("minDate", parseLocalISO(minEnd));
       }
       if (pickers.month && minMonth) {
         const min = new Date(minMonth.getFullYear(), minMonth.getMonth(), 1);
