@@ -687,10 +687,22 @@ function renderCalendar(data, requestDate, startDate, endDate) {
 }
 
 function calculate() {
+  const today = localToday();
   const request = parseISODate(requestInput.value);
   const start = parseISODate(startInput.value);
   const multi = typeInput.value === "leave-multi";
   const end = multi ? parseISODate(endInput.value) : start;
+
+  // Native date inputs lock historical dates. Manually typed older dates are
+  // rejected too, rather than being treated as valid attendance requests.
+  startInput.min = toISODate(today);
+  endInput.min = toISODate(start && start > today ? start : today);
+  if (start && start < today) {
+    renderTop(pointsInput.value, request || today);
+    renderError("Ngày đã qua không thể đăng ký. Vui lòng chọn hôm nay hoặc ngày trong tương lai.");
+    renderCalendar(null, request, start, end);
+    return;
+  }
 
   if (!request || !start || (multi && (!end || end < start))) {
     renderError("Vui lòng nhập ngày đăng ký và khoảng ngày nghỉ hợp lệ.");
