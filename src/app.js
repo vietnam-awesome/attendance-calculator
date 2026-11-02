@@ -44,6 +44,9 @@ const calendarPrev = $("#calendar-prev");
 const calendarNext = $("#calendar-next");
 const calendarReset = $("#calendar-reset");
 const calendarMonthJump = $("#calendar-month-jump");
+const calendarMoreMenu = $("#calendar-more-menu");
+const calendarThisMonth = $("#calendar-this-month");
+const holidayListMore = $("#holiday-list-more");
 const calendarQuickActions = $("#calendar-quick-actions");
 const holidayList = $("#holiday-list");
 const holidayNote = $("#holiday-note");
@@ -54,6 +57,7 @@ let calendarViewDate = null;
 let activeHolidayAnchor = null;
 let referenceFollowsToday = true;
 let lastTodayISO = null;
+let holidayListExpanded = false;
 
 // Render into <body>, outside the calendar's overflow-hidden card, so tooltips
 // remain visible at the edges of the month and are not cut off.
@@ -371,12 +375,13 @@ function holidayOverlaps(start, end) {
 
 function renderHolidayList(viewMonth) {
   if (!holidayList) return;
-  // Hide outdated holiday shortcuts when viewing the current month.
   const today = localToday();
   const from = viewMonth < today ? today : viewMonth;
-  const upcoming = getUpcomingVietnamHolidays(from, 7);
-  holidayList.innerHTML = upcoming.length
-    ? upcoming.map((holiday) => {
+  const upcoming = getUpcomingVietnamHolidays(from, 8);
+  const visible = holidayListExpanded ? upcoming : upcoming.slice(0, 3);
+
+  holidayList.innerHTML = visible.length
+    ? visible.map((holiday) => {
         const reference = holiday.kind === "reference";
         const start = parseISODate(holiday.start);
         const end = parseISODate(holiday.end);
@@ -384,18 +389,26 @@ function renderHolidayList(viewMonth) {
           ? `${formatDateVN(start)} – ${formatDateVN(end)}`
           : formatDateVN(start);
         return `<button type="button" data-holiday-go="${holiday.start}"
-          title="${holiday.note || holiday.name}"
-          class="flex w-full items-start gap-2.5 rounded-lg px-2 py-2 text-left transition hover:bg-slate-50">
-          <span class="mt-1.5 size-2 shrink-0 rounded-full ${reference ? "bg-sky-400" : "bg-teal-500"}"></span>
-          <span class="min-w-0 flex-1"><strong class="block text-xs font-semibold text-slate-800">${holiday.name}</strong>
-            <span class="mt-0.5 block text-[10px] text-slate-500">${label}</span>
-          </span></button>`;
+          class="group flex w-full items-center gap-2.5 rounded-lg px-1.5 py-2.5 text-left transition hover:bg-slate-50">
+          <span class="size-2 shrink-0 rounded-full ${reference ? "bg-sky-400" : "bg-rose-500"}"></span>
+          <span class="min-w-0 flex-1">
+            <strong class="block text-[11px] font-semibold leading-4 text-slate-800 group-hover:text-slate-950">${holiday.name}</strong>
+            <span class="mt-0.5 block text-[10px] text-slate-400">${label}</span>
+          </span>
+          <span class="text-sm text-slate-300" aria-hidden="true">›</span>
+        </button>`;
       }).join("")
-    : '<p class="py-2 text-xs text-slate-500">Chưa có ngày lễ trong dữ liệu hỗ trợ.</p>';
+    : '<p class="py-3 text-xs text-slate-500">Chưa có ngày lễ trong dữ liệu hỗ trợ.</p>';
+
+  if (holidayListMore) {
+    holidayListMore.hidden = upcoming.length <= 3;
+    holidayListMore.textContent = holidayListExpanded ? "Thu gọn" : `Xem thêm ${upcoming.length - 3} ngày lễ`;
+    holidayListMore.setAttribute("aria-expanded", String(holidayListExpanded));
+  }
   if (holidayNote) {
     holidayNote.textContent = isVerifiedLunarHolidayYear(viewMonth.getFullYear())
-      ? "Màu xanh lá: ngày lễ theo luật. Xanh dương: lịch khối nhà nước để tham khảo; lịch doanh nghiệp có thể khác."
-      : "Ngày lễ cố định được hiển thị. Lịch Tết Âm lịch, Giỗ Tổ và các ngày nghỉ bù của năm này chưa được xác minh; không tự suy đoán.";
+      ? "Ngày lễ chính thức được đánh dấu màu đỏ. Lịch nghỉ bù / lịch khối nhà nước màu xanh chỉ để tham khảo; doanh nghiệp có thể có lịch khác."
+      : "Lịch âm và nghỉ bù của năm này chưa được xác minh đầy đủ. Chỉ các ngày cố định theo luật được hiển thị.";
   }
 }
 
@@ -500,25 +513,6 @@ function renderResult(data, requestDate, startDate) {
   `;
 }
 
-function chip(label, value, tone) {
-  const className =
-    {
-      blue: "border-blue-100 bg-blue-50 text-blue-700",
-      amber: "border-amber-100 bg-amber-50 text-amber-700",
-      violet: "border-violet-100 bg-violet-50 text-violet-700",
-      green: "border-emerald-100 bg-emerald-50 text-emerald-700",
-      rose: "border-rose-100 bg-rose-50 text-rose-700",
-      slate: "border-slate-200 bg-slate-100 text-slate-500",
-      weekend: "border-violet-100 bg-violet-50 text-violet-700",
-    }[tone] || "border-slate-200 bg-slate-50 text-slate-600";
-
-  return `
-    <span class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold ${className}">
-      <span class="font-medium opacity-70">${label}</span>${value}
-    </span>
-  `;
-}
-
 function renderCalendar(data, requestDate, startDate, endDate) {
   if (!calendarGrid) return;
   hideHolidayPopover();
@@ -537,24 +531,16 @@ function renderCalendar(data, requestDate, startDate, endDate) {
   calendarMonthJump.min = toISODate(startOfMonth(today)).slice(0, 7);
   calendarMonthJump.value = toISODate(month).slice(0, 7);
   calendarTitle.textContent = formatMonth(month);
-  calendarMeta.innerHTML = [
-    chip("Mốc tính", requestDate ? formatDateVN(requestDate) : "—", "blue"),
-    chip("Hạn chót", deadline ? formatDateVN(deadline) : "—", "amber"),
-    chip(
-      "Nghỉ",
-      startDate
-        ? actualEnd && !sameDate(startDate, actualEnd)
-          ? `${formatDateVN(startDate)} → ${formatDateVN(actualEnd)}`
-          : formatDateVN(startDate)
-        : "—",
-      "violet",
-    ),
-    chip("An toàn", "0", "green"),
-    chip("Cuối tuần", "T7/CN", "weekend"),
-    chip("Cảnh báo", "-1", "amber"),
-    chip("Vi phạm", "-2", "rose"),
-    chip("Đã qua", "", "slate"),
-  ].join("");
+  const leaveLabel = startDate
+    ? actualEnd && !sameDate(startDate, actualEnd)
+      ? `${formatDateVN(startDate)} – ${formatDateVN(actualEnd)}`
+      : formatDateVN(startDate)
+    : "—";
+  calendarMeta.innerHTML = `
+    <span>Ngày dự kiến <strong class="font-semibold text-violet-700">${leaveLabel}</strong></span>
+    <span class="hidden text-slate-300 sm:inline" aria-hidden="true">•</span>
+    <span>Hạn đăng ký <strong class="font-semibold text-slate-700">${deadline ? formatDateVN(deadline) : "—"}</strong></span>
+  `;
 
   const gridStart = addDays(month, -((month.getDay() + 6) % 7));
   const cells = [];
@@ -847,10 +833,21 @@ holidayList?.addEventListener("click", (event) => {
   if (date) goToCalendarMonth(date);
 });
 
+holidayListMore?.addEventListener("click", () => {
+  holidayListExpanded = !holidayListExpanded;
+  renderHolidayList(calendarViewDate || localToday());
+});
+
+calendarThisMonth?.addEventListener("click", () => {
+  goToCalendarMonth(localToday());
+  if (calendarMoreMenu) calendarMoreMenu.open = false;
+});
+
 calendarMonthJump?.addEventListener("change", () => {
   const month = parseFutureCalendarMonth(calendarMonthJump.value, localToday());
   if (month) {
     goToCalendarMonth(month);
+    if (calendarMoreMenu) calendarMoreMenu.open = false;
   } else {
     // Native input may permit editing into an invalid or past month.
     // Restore the valid calendar month without navigating backwards.
@@ -954,6 +951,7 @@ calendarReset?.addEventListener("click", () => {
     parseISODate(requestInput.value) ||
     localToday(),
   );
+  if (calendarMoreMenu) calendarMoreMenu.open = false;
 });
 
 form.addEventListener("input", calculate);
