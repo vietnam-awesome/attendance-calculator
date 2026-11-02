@@ -24,11 +24,14 @@ function mockFlatpickr() {
           : `${y}-${m}-${d}`;
       },
       setDate(value, trigger, format) {
-        const parts = value?.split("-").map(Number) || [];
-        this.selectedDates = parts.length >= 2
-          ? [new Date(parts[0], parts[1] - 1, parts[2] || 1)]
-          : [];
-        field.value = value;
+        const parts = typeof value === "string" ? value.split("-").map(Number) : [];
+        const parsed = value instanceof Date
+          ? value
+          : parts.length >= 2
+            ? new Date(parts[0], parts[1] - 1, parts[2] || 1)
+            : null;
+        this.selectedDates = parsed ? [parsed] : [];
+        field.value = parsed ? this.formatDate(parsed, format || "Y-m-d") : "";
         this.lastTrigger = trigger;
         this.lastFormat = format;
       },
