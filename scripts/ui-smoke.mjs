@@ -12,6 +12,25 @@ try {
     { width: 390, height: 844, name: "mobile" },
   ]) {
     const page = await browser.newPage({ viewport, deviceScaleFactor: 1 });
+    await page.addInitScript(() => {
+      window.__dateValueTraces = [];
+      const desc = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value");
+      Object.defineProperty(HTMLInputElement.prototype, "value", {
+        configurable: true,
+        get() { return desc.get.call(this); },
+        set(next) {
+          const prev = desc.get.call(this);
+          desc.set.call(this, next);
+          if (["request-date", "start-date"].includes(this.id)) {
+            window.__dateValueTraces.push({
+              id: this.id, before: prev, passed: String(next),
+              after: desc.get.call(this), inputType: this.type,
+              stack: new Error().stack?.split("\\n").slice(1, 5).join(" > "),
+            });
+          }
+        },
+      });
+    });
     page.on("pageerror", (error) => failures.push(`${viewport.name}: ${error.message}`));
     await page.goto(URL, { waitUntil: "domcontentloaded", timeout: 45000 });
     await page.waitForFunction(
@@ -39,6 +58,7 @@ try {
           defaultDate: input._flatpickr?.config?.defaultDate,
           alt: input._flatpickr?.altInput?.outerHTML,
           result: document.querySelector("#result")?.innerText?.slice(0,250),
+          traces: window.__dateValueTraces?.slice(-22),
         };
       }),
     }));
