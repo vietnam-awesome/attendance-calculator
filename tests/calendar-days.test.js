@@ -1,6 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { getCalendarDayKind, getCalendarCellState, isLeaveCandidateDay, isWeekend } from "../src/calendar-days.js";
+import {
+  getCalendarDayKind, getCalendarCellState, isLeaveCandidateDay, isWeekend,
+  clampCalendarMonth, canVisitPreviousMonth, parseFutureCalendarMonth,
+  nextLeaveCandidate,
+} from "../src/calendar-days.js";
 
 const date = (value) => {
   const [year, month, day] = value.split("-").map(Number);
@@ -94,4 +98,41 @@ test("manually chosen future reference also mutes earlier calendar days", () => 
   assert.equal(cell.kind, "past");
   assert.equal(cell.selectable, false);
   assert.equal(cell.showIndicators, false);
+});
+
+test("calendar cannot navigate into months before the current month", () => {
+  const today = date("2026-11-02");
+  assert.equal(canVisitPreviousMonth(date("2026-11-18"), today), false);
+  assert.equal(canVisitPreviousMonth(date("2026-12-01"), today), true);
+  const clamped = clampCalendarMonth(date("2026-10-15"), today);
+  assert.deepEqual([clamped.getFullYear(), clamped.getMonth(), clamped.getDate()], [2026, 10, 1]);
+});
+
+test("native month picker rejects old months and malformed inputs, accepts future", () => {
+  const today = date("2026-11-02");
+  for (const input of ["2026-10", "2025-12", "2026-13", "2026-00", "bad", "2026-1", "2026-11-02"]) {
+    assert.equal(parseFutureCalendarMonth(input, today), null, input);
+  }
+  const valid = parseFutureCalendarMonth("2027-01", today);
+  assert.equal(valid.getFullYear(), 2027);
+  assert.equal(valid.getMonth(), 0);
+  assert.equal(parseFutureCalendarMonth("2026-11", today).getMonth(), 10);
+});
+
+test("quick selection advances past Saturday/Sunday and actual statutory holiday", () => {
+  assert.equal(
+    nextLeaveCandidate(date("2027-01-01"), { inclusive: true }).toLocaleDateString("en-CA"),
+    date("2027-01-04").toLocaleDateString("en-CA"),
+  );
+  assert.equal(
+    nextLeaveCandidate(date("2027-01-02"), { inclusive: false }).getDate(), 4,
+  );
+});
+
+test("quick selection handles year boundary and invalid dates", () => {
+  const value = nextLeaveCandidate(date("2026-12-31"), { inclusive: false });
+  assert.equal(value.getFullYear(), 2027);
+  assert.equal(value.getMonth(), 0);
+  assert.equal(value.getDate(), 4);
+  assert.equal(nextLeaveCandidate(new Date(NaN)), null);
 });
