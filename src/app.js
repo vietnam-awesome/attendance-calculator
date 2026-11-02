@@ -13,6 +13,7 @@ import {
   getVietnamHolidays,
   isVerifiedLunarHolidayYear,
 } from "./vietnam-holidays.js";
+import { isWeekend, isLeaveCandidateDay } from "./calendar-days.js";
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -206,6 +207,7 @@ function evaluateCandidate(start, request, options = {}) {
 function earliestSafeDate(request, options = {}) {
   for (let offset = 0; request && offset <= 400; offset += 1) {
     const candidate = addDays(request, offset);
+    if (!isLeaveCandidateDay(candidate)) continue;
     const evaluation = evaluateCandidate(candidate, request, options);
     if (evaluation?.valid && evaluation.deduction === 0) return candidate;
   }
@@ -308,6 +310,17 @@ function renderTop(points, referenceDate) {
   pointsBar.style.width = `${safePoints}%`;
   currentLevelEl.textContent = level.level ? level.name : "Chưa Mức 1";
   currentLevelEl.className = `inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold ${levelTone(level.level)}`;
+}
+
+function renderRestDayMessage(startDate) {
+  result.innerHTML = `
+    <div class="rounded-xl border border-violet-200 bg-violet-50 p-4 text-violet-950">
+      <p class="text-[10px] font-bold uppercase tracking-wide text-violet-600">Ngày nghỉ định kỳ</p>
+      <h2 class="mt-1.5 text-base font-bold">Thứ Bảy / Chủ nhật không cần xin phép</h2>
+      <p class="mt-2 text-xs leading-5">Ngày bắt đầu ${formatDateVN(startDate)} rơi vào cuối tuần.
+      Với lịch làm việc T2–T6 mặc định, đây không phải ngày nghỉ phép cần chấm điểm.
+      Hãy chọn ngày làm việc để dự báo điểm chuyên cần.</p>
+    </div>`;
 }
 
 function renderError(message) {
@@ -472,6 +485,7 @@ function chip(label, value, tone) {
       green: "border-emerald-100 bg-emerald-50 text-emerald-700",
       rose: "border-rose-100 bg-rose-50 text-rose-700",
       slate: "border-slate-200 bg-slate-100 text-slate-500",
+      weekend: "border-violet-100 bg-violet-50 text-violet-700",
     }[tone] || "border-slate-200 bg-slate-50 text-slate-600";
 
   return `
@@ -507,6 +521,7 @@ function renderCalendar(data, requestDate, startDate, endDate) {
       "violet",
     ),
     chip("An toàn", "0", "green"),
+    chip("Cuối tuần", "T7/CN", "weekend"),
     chip("Cảnh báo", "-1", "amber"),
     chip("Vi phạm", "-2", "rose"),
     chip("Đã qua", "", "slate"),
@@ -523,11 +538,13 @@ function renderCalendar(data, requestDate, startDate, endDate) {
       date.getFullYear() === month.getFullYear();
     const beforeReference = current && requestDate && isBefore(date, requestDate);
     const evaluation =
-      current && !beforeReference ? evaluateCandidate(date, requestDate) : null;
+      current && !beforeReference && !isWeekend(date) ? evaluateCandidate(date, requestDate) : null;
     const deduction = evaluation?.deduction;
     const holiday = current ? getHolidaysOnDate(date)[0] : null;
     const isPublicHoliday = Boolean(holiday);
     const isReferenceHoliday = holiday?.kind === "reference";
+    const weekend = current && isWeekend(date);
+    const saturday = weekend && date.getDay() === 6;
 
     let status = "border-transparent bg-slate-50/60 text-slate-300";
     let label = "";
@@ -538,7 +555,13 @@ function renderCalendar(data, requestDate, startDate, endDate) {
         ? "calendar-holiday calendar-holiday--reference"
         : "calendar-holiday calendar-holiday--official";
       label = isReferenceHoliday ? "LỊCH NGHỈ" : "NGÀY LỄ";
-      selectable = !beforeReference;
+      selectable = !beforeReference && isLeaveCandidateDay(date);
+    } else if (weekend) {
+      status = saturday
+        ? "calendar-weekend calendar-weekend--saturday"
+        : "calendar-weekend calendar-weekend--sunday";
+      label = "NGÀY NGHỈ";
+      selectable = false;
     } else if (beforeReference) {
       status = "border-slate-100 bg-slate-50/80 text-slate-300 opacity-60";
       label = "Đã qua";
@@ -565,6 +588,8 @@ function renderCalendar(data, requestDate, startDate, endDate) {
       selectable || isPublicHoliday ? "cursor-pointer" : "cursor-default",
     ];
 
+    if (weekend && beforeReference) classes.push("opacity-65");
+
     if (inRange(date, startDate, actualEnd)) {
       classes.push("outline outline-2 outline-offset-[-2px] outline-violet-500");
     }
@@ -580,10 +605,11 @@ function renderCalendar(data, requestDate, startDate, endDate) {
       );
     }
 
-    const labelClass = beforeReference && !isPublicHoliday
+    const labelClass = beforeReference && !isPublicHoliday && !weekend
       ? "text-slate-300"
       : isPublicHoliday
         ? isReferenceHoliday ? "text-sky-700" : "text-rose-700"
+        : weekend ? (saturday ? "text-violet-700" : "text-indigo-700")
         : deduction === 0
         ? "text-emerald-700"
         : deduction === 1
@@ -595,7 +621,7 @@ function renderCalendar(data, requestDate, startDate, endDate) {
       : isPublicHoliday ? 'aria-disabled="true"' : "disabled";
     const holidayAttribute = isPublicHoliday
       ? `data-holiday-date="${toISODate(date)}" aria-describedby="calendar-holiday-tooltip" aria-label="${formatDateVN(date)}, ${holiday.name}. ${isReferenceHoliday ? "Lịch tham khảo" : "Ngày lễ chính thức"}"`
-      : `title="${formatDateVN(date)}${label ? ` · ${label}` : ""}"`;
+      : `title="${formatDateVN(date)}${weekend ? " · Ngày nghỉ cuối tuần (lịch T2–T6)" : label ? ` · ${label}` : ""}"`;
     const holidayIcon = isReferenceHoliday
       ? '<svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M8 15h8"/></svg>'
       : '<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 2.9 6.5 7.1.8-5.3 4.8 1.5 7-6.2-3.6-6.2 3.6 1.5-7L2 9.3l7.1-.8z"/></svg>';
@@ -605,7 +631,7 @@ function renderCalendar(data, requestDate, startDate, endDate) {
         <div class="flex items-start justify-between gap-1">
           <span class="flex size-6 items-center justify-center rounded-lg text-[11px] font-bold ${isPublicHoliday ? "calendar-holiday__date" : sameDate(date, today) ? "bg-slate-900 text-white" : current ? beforeReference ? "text-slate-300" : "text-slate-800" : "text-slate-300"}">${date.getDate()}</span>
           <span class="flex items-center gap-1">
-            ${isPublicHoliday ? `<span class="calendar-holiday__icon">${holidayIcon}</span>` : ""}
+            ${isPublicHoliday ? `<span class="calendar-holiday__icon">${holidayIcon}</span>` : weekend ? '<span class="calendar-weekend__icon" aria-hidden="true">☾</span>' : ""}
             ${sameDate(date, requestDate) ? '<i class="size-1.5 rounded-full bg-blue-500"></i>' : ""}
             ${sameDate(date, deadline) ? '<i class="size-1.5 rounded-full bg-amber-500"></i>' : ""}
             ${inRange(date, startDate, actualEnd) ? '<i class="size-1.5 rounded-full bg-violet-500"></i>' : ""}
@@ -616,7 +642,11 @@ function renderCalendar(data, requestDate, startDate, endDate) {
               <span class="calendar-holiday__tag">${label}</span>
               <span class="calendar-holiday__name">${holiday.name}</span>
             </div>`
-          : label ? `<div class="mt-2 hidden text-[8px] font-extrabold uppercase tracking-wide ${labelClass} sm:block">${label}</div>` : ""}
+          : weekend
+            ? `<div class="mt-1.5 text-[8px] font-extrabold uppercase tracking-wide ${labelClass}">
+                 <span class="sm:hidden">NGHỈ</span><span class="hidden sm:inline">NGÀY NGHỈ</span>
+               </div>`
+            : label ? `<div class="mt-2 hidden text-[8px] font-extrabold uppercase tracking-wide ${labelClass} sm:block">${label}</div>` : ""}
       </button>
     `);
   }
@@ -630,9 +660,19 @@ function calculate() {
   const multi = typeInput.value === "leave-multi";
   const end = multi ? parseISODate(endInput.value) : start;
 
-  if (!request) {
-    renderError("Vui lòng chọn mốc tính hợp lệ.");
-    renderCalendar(null, null, start, end);
+  if (!request || !start || (multi && (!end || end < start))) {
+    renderError("Vui lòng nhập ngày đăng ký và khoảng ngày nghỉ hợp lệ.");
+    renderCalendar(null, request, start, end);
+    return;
+  }
+
+  // A weekend is already a rest day in the standard Monday–Friday schedule.
+  // Do not assign an artificial attendance penalty for requesting that date.
+  if (isWeekend(start)) {
+    renderTop(pointsInput.value, request);
+    renderRestDayMessage(start);
+    renderCalendar(null, request, start, end);
+    saveState();
     return;
   }
 
@@ -652,13 +692,21 @@ function calculate() {
 }
 
 function selectStartDate(date) {
+  if (!date) return;
+  // Quick-date shortcuts may land on a weekend or public holiday. Advance to
+  // the next date where a normal leave application would make sense.
+  let target = date;
+  for (let index = 0; !isLeaveCandidateDay(target) && index < 15; index += 1) {
+    target = addDays(target, 1);
+  }
+  if (!isLeaveCandidateDay(target)) return;
   const oldDuration = durationDays();
-  startInput.value = toISODate(date);
+  startInput.value = toISODate(target);
   endInput.value =
     typeInput.value === "leave-multi"
-      ? toISODate(addDays(date, oldDuration - 1))
+      ? toISODate(addDays(target, oldDuration - 1))
       : startInput.value;
-  calendarViewDate = startOfMonth(date);
+  calendarViewDate = startOfMonth(target);
   calculate();
 }
 
