@@ -56,6 +56,9 @@ Danh mục độc lập với chính sách từng doanh nghiệp, không có d�
 - **Các năm khác:** chỉ hiển thị ngày dương lịch cố định. Không tự suy đoán lịch âm hoặc lịch nghỉ bù chưa xác nhận.
 - Các kỳ nghỉ có thể có ngày nghỉ hằng tuần nằm giữa; ngày lễ được hiển thị trên calendar và trong bảng danh sách sắp tới.
 - Trên calendar, **ngày lễ chính thức** có nền đỏ hồng, biểu tượng ngôi sao và tên ngày lễ; **lịch khối nhà nước tham khảo** có nền xanh dương, biểu tượng lịch.
+- **Thứ Bảy và Chủ nhật** mặc định là ngày nghỉ với ô màu tím/tím xanh riêng, hiện "NGÀY NGHỈ" thay vì "AN TOÀN"; ngày lễ trùng cuối tuần luôn ưu tiên kiểu ngày lễ.
+- Ngày nghỉ cuối tuần không thể được chọn trên lịch để tính điểm chuyên cần, và được loại khỏi gợi ý ngày nghỉ an toàn gần nhất. Các ngày lễ chính thức cũng không được đề xuất làm ngày cần xin phép.
+- Nếu nhập thủ công ngày bắt đầu rơi vào T7/CN, công cụ nhắc rằng đó là ngày nghỉ định kỳ thay vì tính mức trừ điểm. Lịch mặc định **làm việc từ thứ Hai đến thứ Sáu**, không đại diện mọi doanh nghiệp.
 - Di chuột hoặc focus bàn phím vào ngày lễ để xem **tooltip chi tiết** (tên, ngày, loại lễ, ghi chú); trên điện thoại có thể chạm để xem. Tooltip được gắn vào body nên không bị cắt ở biên calendar.
 - **Không tự động trừ ngày lễ khỏi số ngày xin phép / điểm chuyên cần**, vì lịch doanh nghiệp và cơ chế nghỉ bù có thể khác. Chỉ có cảnh báo thông tin khi chọn kỳ nghỉ trùng lễ.
 
@@ -79,6 +82,8 @@ Giao diện dùng Tailwind CSS v4 theo hướng mobile-first: form tối giản,
 Workflow GitHub Pages được cấu hình để deploy khi merge/push lên `main`. Trong repository settings, Pages cần chọn **GitHub Actions** làm source nếu chưa được bật.
 
 ## Lưu ý cách tính
+
+Mốc báo trước vẫn tính **ngày lịch**; khi chọn khoảng nghỉ nhiều ngày, số ngày hiện được phân loại theo **độ dài ngày lịch**, chưa tự trừ ngày cuối tuần khỏi độ dài kỳ nghỉ. Điều này không ảnh hưởng đến việc tô màu ngày nghỉ cuối tuần trên calendar.
 
 Các mốc thời gian hiện dùng **ngày lịch**. Khi tự phân loại “từ 1 tháng”, ứng dụng dùng ngưỡng 30 ngày; deadline theo tháng vẫn trừ theo tháng lịch và clamp ngày cuối tháng.
 
