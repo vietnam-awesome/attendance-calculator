@@ -62,7 +62,12 @@ Danh mục độc lập với chính sách từng doanh nghiệp, không có d�
 - **Thứ Bảy và Chủ nhật** mặc định là ngày nghỉ với ô màu tím/tím xanh riêng, hiện "NGÀY NGHỈ" thay vì "AN TOÀN"; ngày lễ trùng cuối tuần luôn ưu tiên kiểu ngày lễ.
 - Khi một ngày **đã qua**, ô lịch sử dụng duy nhất màu xám trung tính (kể cả T7/CN và ngày lễ), không có icon màu, hover hay marker chọn.
 - **Không thể quay về tháng trước tháng hiện tại**: nút mũi tên trái bị khóa ở tháng hiện tại, nhập tháng quá khứ vào bộ chọn tháng/năm sẽ bị từ chối; cả link ngày lễ lẫn nút "Ngày đã chọn" cũng không thể mở lịch cũ.
-- **Chọn nhanh** trên lịch: "Tháng này" (chỉ chuyển tháng), "Ngày an toàn gần nhất" (chọn ngày đủ hạn báo trước), "+7 ngày", "+14 ngày" (tính từ mốc tham chiếu, tự bỏ qua cuối tuần và ngày lễ chính thức), "Tháng sau" và ô chọn trực tiếp tháng/năm. Chuyển tháng để xem không thay đổi ngày nghỉ đã chọn.
+- **Chọn nhanh** ngay trên lịch: "Ngày an toàn gần nhất" (ngày đủ hạn báo trước), "+7 ngày", "+14 ngày" (bỏ qua cuối tuần và ngày lễ chính thức). Chuyển tháng để xem không thay đổi ngày nghỉ đã chọn.
+- **Bố cục lịch gọn hơn:** chỉ để các thao tác thực sự dùng thường xuyên ngay trên lịch; nút chọn tháng/năm, "Tháng này" và "Ngày đã chọn" nằm trong menu "Chọn tháng". Mũi tên phải chuyển sang tháng kế tiếp, không có nút "Tháng sau" trùng lặp.
+- Thanh thông tin lịch chỉ hiển thị **ngày dự kiến nghỉ** và **hạn đăng ký**, thay vì lặp lại toàn bộ chú giải màu.
+- Sidebar ngày lễ mặc định chỉ hiển thị **3 mục gần nhất**, có nút mở rộng danh sách. Quy tắc báo trước và lưu ý lịch được thu gọn bằng `details`.
+- Các tháng chỉ cần 4–5 tuần sẽ không render hàng thứ 6 thừa; menu chọn tháng không bị cắt bởi viền calendar.
+
 - Ô chọn ngày nghỉ đặt ngày tối thiểu là **hôm nay**; nếu nhập tay một ngày cũ, công cụ báo lỗi thay vì dự báo điểm.
 - Ngày từ tháng trước/tháng sau chỉ là **ô lấp lịch**, không được chọn và không hiển thị chấm mốc tính, ngày đang chọn, viền focus hoặc gợi ý. Nút "Về ngày đã chọn" vẫn đưa người dùng đến đúng tháng có ngày đã chọn.
 - Ngày nghỉ cuối tuần không thể được chọn trên lịch để tính điểm chuyên cần, và được loại khỏi gợi ý ngày nghỉ an toàn gần nhất. Các ngày lễ chính thức cũng không được đề xuất làm ngày cần xin phép.
