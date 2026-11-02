@@ -15,7 +15,7 @@ import {
 } from "./vietnam-holidays.js";
 import {
   isWeekend, isLeaveCandidateDay, getCalendarCellState, clampCalendarMonth,
-  canVisitPreviousMonth, parseFutureCalendarMonth,
+  canVisitPreviousMonth, parseFutureCalendarMonth, calendarWeekCount,
 } from "./calendar-days.js";
 import { restorePlanningDates, initialCalendarMonth } from "./planner-state.js";
 
@@ -545,7 +545,7 @@ function renderCalendar(data, requestDate, startDate, endDate) {
   const gridStart = addDays(month, -((month.getDay() + 6) % 7));
   const cells = [];
 
-  for (let index = 0; index < 42; index += 1) {
+  for (let index = 0; index < calendarWeekCount(month) * 7; index += 1) {
     const date = addDays(gridStart, index);
     const cell = getCalendarCellState(date, month, requestDate, today);
     const current = cell.inMonth;
