@@ -7,6 +7,12 @@ import {
   parseISODate,
   toISODate,
 } from "./attendance-rules.js";
+import {
+  getHolidaysOnDate,
+  getUpcomingVietnamHolidays,
+  getVietnamHolidays,
+  isVerifiedLunarHolidayYear,
+} from "./vietnam-holidays.js";
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -32,6 +38,8 @@ const calendarMeta = $("#calendar-meta");
 const calendarPrev = $("#calendar-prev");
 const calendarNext = $("#calendar-next");
 const calendarReset = $("#calendar-reset");
+const holidayList = $("#holiday-list");
+const holidayNote = $("#holiday-note");
 
 const STORAGE_KEY = "attendance-calculator-v4";
 const DAY_MS = 86_400_000;
@@ -235,6 +243,48 @@ function renderError(message) {
   `;
 }
 
+function holidayOverlaps(start, end) {
+  if (!start || !end || end < start) return [];
+  const firstYear = start.getFullYear();
+  const lastYear = end.getFullYear();
+  const from = toISODate(start);
+  const to = toISODate(end);
+  const matches = [];
+  for (let year = firstYear; year <= lastYear && year < firstYear + 2; year += 1) {
+    matches.push(...getVietnamHolidays(year).filter(
+      (holiday) => holiday.start <= to && holiday.end >= from,
+    ));
+  }
+  return matches;
+}
+
+function renderHolidayList(viewMonth) {
+  if (!holidayList) return;
+  const upcoming = getUpcomingVietnamHolidays(viewMonth, 7);
+  holidayList.innerHTML = upcoming.length
+    ? upcoming.map((holiday) => {
+        const reference = holiday.kind === "reference";
+        const start = parseISODate(holiday.start);
+        const end = parseISODate(holiday.end);
+        const label = end && toISODate(end) !== holiday.start
+          ? `${formatDateVN(start)} – ${formatDateVN(end)}`
+          : formatDateVN(start);
+        return `<button type="button" data-holiday-go="${holiday.start}"
+          title="${holiday.note || holiday.name}"
+          class="flex w-full items-start gap-2.5 rounded-lg px-2 py-2 text-left transition hover:bg-slate-50">
+          <span class="mt-1.5 size-2 shrink-0 rounded-full ${reference ? "bg-sky-400" : "bg-teal-500"}"></span>
+          <span class="min-w-0 flex-1"><strong class="block text-xs font-semibold text-slate-800">${holiday.name}</strong>
+            <span class="mt-0.5 block text-[10px] text-slate-500">${label}</span>
+          </span></button>`;
+      }).join("")
+    : '<p class="py-2 text-xs text-slate-500">Chưa có ngày lễ trong dữ liệu hỗ trợ.</p>';
+  if (holidayNote) {
+    holidayNote.textContent = isVerifiedLunarHolidayYear(viewMonth.getFullYear())
+      ? "Màu xanh lá: ngày lễ theo luật. Xanh dương: lịch khối nhà nước để tham khảo; lịch doanh nghiệp có thể khác."
+      : "Ngày lễ cố định được hiển thị. Lịch Tết Âm lịch, Giỗ Tổ và các ngày nghỉ bù của năm này chưa được xác minh; không tự suy đoán.";
+  }
+}
+
 function renderResult(data, requestDate, startDate) {
   if (!data.valid) {
     renderError(data.error);
@@ -247,6 +297,17 @@ function renderResult(data, requestDate, startDate) {
     ? "Không báo"
     : `${Math.max(0, daysBetween(startDate, requestDate))} ngày`;
   const safeDate = safe ? startDate : earliestSafeDate(requestDate);
+  const holidayMatches = holidayOverlaps(startDate, data.rule.type === "leave"
+    ? parseISODate(endInput.value) && typeInput.value === "leave-multi"
+      ? parseISODate(endInput.value)
+      : startDate
+    : startDate);
+  const holidayNotice = holidayMatches.length
+    ? `<div class="mt-3 rounded-xl border border-teal-200 bg-teal-50 px-3 py-2.5 text-xs leading-5 text-teal-950">
+        <strong>Trùng lịch lễ Việt Nam:</strong> ${holidayMatches.map((item) => item.name).join(", ")}.
+        <p class="mt-1 text-teal-800">Ngày nghỉ lễ và lịch cơ quan nhà nước chỉ để tham khảo. Công cụ vẫn mô phỏng điểm theo ngày đăng ký, chưa tự trừ ngày lễ khỏi số ngày xin nghỉ. Kiểm tra lịch nghỉ tại nơi làm việc.</p>
+      </div>`
+    : "";
 
   const tone = safe
     ? {
@@ -315,6 +376,7 @@ function renderResult(data, requestDate, startDate) {
     </div>
 
     <div class="mt-3 rounded-xl border px-3 py-2.5 text-xs leading-5 ${tone.box}">${timing}</div>
+    ${holidayNotice}
     ${suggestion}
 
     <details class="group mt-3 rounded-xl border border-slate-200 bg-white">
@@ -351,6 +413,7 @@ function renderCalendar(data, requestDate, startDate, endDate) {
   const month = startOfMonth(calendarViewDate);
   const deadline = data?.valid ? data.deadline : null;
   const actualEnd = endDate || startDate;
+  renderHolidayList(month);
 
   calendarTitle.textContent = formatMonth(month);
   calendarMeta.innerHTML = [
@@ -384,6 +447,9 @@ function renderCalendar(data, requestDate, startDate, endDate) {
     const evaluation =
       current && !beforeReference ? evaluateCandidate(date, requestDate) : null;
     const deduction = evaluation?.deduction;
+    const holiday = getHolidaysOnDate(date)[0];
+    const isPublicHoliday = Boolean(holiday);
+    const isReferenceHoliday = holiday?.kind === "reference";
 
     let status = "border-transparent bg-slate-50/60 text-slate-300";
     let label = "";
@@ -392,6 +458,12 @@ function renderCalendar(data, requestDate, startDate, endDate) {
     if (beforeReference) {
       status = "border-slate-100 bg-slate-50/80 text-slate-300 opacity-60";
       label = "Đã qua";
+    } else if (current && isPublicHoliday) {
+      status = isReferenceHoliday
+        ? "border-sky-200 bg-sky-50/90 hover:bg-sky-100"
+        : "border-teal-200 bg-teal-50/90 hover:bg-teal-100";
+      label = isReferenceHoliday ? "Tham khảo" : "Ngày lễ";
+      selectable = true;
     } else if (current && deduction === 0) {
       status = "border-emerald-100 bg-emerald-50/90 hover:bg-emerald-100";
       label = "An toàn";
@@ -432,7 +504,9 @@ function renderCalendar(data, requestDate, startDate, endDate) {
 
     const labelClass = beforeReference
       ? "text-slate-300"
-      : deduction === 0
+      : isPublicHoliday
+        ? isReferenceHoliday ? "text-sky-700" : "text-teal-700"
+        : deduction === 0
         ? "text-emerald-700"
         : deduction === 1
           ? "text-amber-700"
@@ -443,7 +517,7 @@ function renderCalendar(data, requestDate, startDate, endDate) {
       : "disabled";
 
     cells.push(`
-      <button type="button" ${dataAttribute} class="${classes.join(" ")}" title="${formatDateVN(date)}${label ? ` · ${label}` : ""}">
+      <button type="button" ${dataAttribute} class="${classes.join(" ")}" title="${formatDateVN(date)}${holiday ? ` · ${holiday.name}` : label ? ` · ${label}` : ""}">
         <div class="flex items-start justify-between">
           <span class="flex size-6 items-center justify-center rounded-lg text-[11px] font-bold ${sameDate(date, today) ? "bg-slate-900 text-white" : current ? beforeReference ? "text-slate-300" : "text-slate-800" : "text-slate-300"}">${date.getDate()}</span>
           <span class="flex gap-1">
@@ -534,6 +608,15 @@ referenceTodayButton.addEventListener("click", () => {
 result.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-use-safe-date]");
   if (button) selectStartDate(parseISODate(button.dataset.useSafeDate));
+});
+
+holidayList?.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-holiday-go]");
+  if (!button) return;
+  const date = parseISODate(button.dataset.holidayGo);
+  if (!date) return;
+  calendarViewDate = startOfMonth(date);
+  calculate();
 });
 
 calendarGrid?.addEventListener("click", (event) => {
