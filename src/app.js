@@ -582,9 +582,9 @@ function calculate() {
   const multi = typeInput.value === "leave-multi" || typeInput.value === "summer";
   const end = multi ? parseISODate(endInput.value) : start;
 
-  if (!request) {
-    renderError("Vui lòng chọn mốc tính hợp lệ.");
-    renderCalendar(null, null, start, end);
+  if (!request || !start || (multi && (!end || end < start))) {
+    renderError("Vui lòng nhập ngày đăng ký và khoảng ngày nghỉ hợp lệ.");
+    renderCalendar(null, request, start, end);
     return;
   }
 
