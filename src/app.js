@@ -13,7 +13,10 @@ import {
   getVietnamHolidays,
   isVerifiedLunarHolidayYear,
 } from "./vietnam-holidays.js";
-import { isWeekend, isLeaveCandidateDay, getCalendarCellState } from "./calendar-days.js";
+import {
+  isWeekend, isLeaveCandidateDay, getCalendarCellState, clampCalendarMonth,
+  canVisitPreviousMonth, parseFutureCalendarMonth,
+} from "./calendar-days.js";
 import { restorePlanningDates, initialCalendarMonth } from "./planner-state.js";
 
 const $ = (selector) => document.querySelector(selector);
@@ -40,6 +43,8 @@ const calendarMeta = $("#calendar-meta");
 const calendarPrev = $("#calendar-prev");
 const calendarNext = $("#calendar-next");
 const calendarReset = $("#calendar-reset");
+const calendarMonthJump = $("#calendar-month-jump");
+const calendarQuickActions = $("#calendar-quick-actions");
 const holidayList = $("#holiday-list");
 const holidayNote = $("#holiday-note");
 
@@ -366,7 +371,10 @@ function holidayOverlaps(start, end) {
 
 function renderHolidayList(viewMonth) {
   if (!holidayList) return;
-  const upcoming = getUpcomingVietnamHolidays(viewMonth, 7);
+  // Hide outdated holiday shortcuts when viewing the current month.
+  const today = localToday();
+  const from = viewMonth < today ? today : viewMonth;
+  const upcoming = getUpcomingVietnamHolidays(from, 7);
   holidayList.innerHTML = upcoming.length
     ? upcoming.map((holiday) => {
         const reference = holiday.kind === "reference";
@@ -515,14 +523,19 @@ function renderCalendar(data, requestDate, startDate, endDate) {
   if (!calendarGrid) return;
   hideHolidayPopover();
 
-  const focus = startDate || requestDate || localToday();
-  if (!calendarViewDate) calendarViewDate = startOfMonth(focus);
-
-  const month = startOfMonth(calendarViewDate);
+  const today = localToday();
+  const focus = startDate || requestDate || today;
+  calendarViewDate = clampCalendarMonth(calendarViewDate || focus, today);
+  const month = calendarViewDate;
   const deadline = data?.valid ? data.deadline : null;
   const actualEnd = endDate || startDate;
   renderHolidayList(month);
 
+  // Disable navigation to old months and constrain the native month picker.
+  calendarPrev.disabled = !canVisitPreviousMonth(month, today);
+  calendarPrev.setAttribute("aria-disabled", String(calendarPrev.disabled));
+  calendarMonthJump.min = toISODate(startOfMonth(today)).slice(0, 7);
+  calendarMonthJump.value = toISODate(month).slice(0, 7);
   calendarTitle.textContent = formatMonth(month);
   calendarMeta.innerHTML = [
     chip("Mốc tính", requestDate ? formatDateVN(requestDate) : "—", "blue"),
@@ -544,7 +557,6 @@ function renderCalendar(data, requestDate, startDate, endDate) {
   ].join("");
 
   const gridStart = addDays(month, -((month.getDay() + 6) % 7));
-  const today = localToday();
   const cells = [];
 
   for (let index = 0; index < 42; index += 1) {
@@ -715,7 +727,8 @@ function selectStartDate(date) {
   if (!date) return;
   // Quick-date shortcuts may land on a weekend or public holiday. Advance to
   // the next date where a normal leave application would make sense.
-  let target = date;
+  const today = localToday();
+  let target = date < today ? today : date;
   for (let index = 0; !isLeaveCandidateDay(target) && index < 15; index += 1) {
     target = addDays(target, 1);
   }
@@ -750,12 +763,10 @@ startInput.addEventListener("change", () => {
 quickDateButtons.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-offset]");
   if (!button) return;
-  selectStartDate(
-    addDays(
-      parseISODate(requestInput.value) || localToday(),
-      Number(button.dataset.offset),
-    ),
-  );
+  const today = localToday();
+  const request = parseISODate(requestInput.value) || today;
+  const base = request > today ? request : today;
+  selectStartDate(addDays(base, Number(button.dataset.offset)));
 });
 
 referenceTodayButton.addEventListener("click", () => {
@@ -810,13 +821,58 @@ result.addEventListener("click", (event) => {
   if (button) selectStartDate(parseISODate(button.dataset.useSafeDate));
 });
 
+function goToCalendarMonth(date) {
+  const month = clampCalendarMonth(date, localToday());
+  if (!month) return;
+  calendarViewDate = month;
+  calculate();
+}
+
 holidayList?.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-holiday-go]");
   if (!button) return;
   const date = parseISODate(button.dataset.holidayGo);
-  if (!date) return;
-  calendarViewDate = startOfMonth(date);
-  calculate();
+  if (date) goToCalendarMonth(date);
+});
+
+calendarMonthJump?.addEventListener("change", () => {
+  const month = parseFutureCalendarMonth(calendarMonthJump.value, localToday());
+  if (month) {
+    goToCalendarMonth(month);
+  } else {
+    // Native input may permit editing into an invalid or past month.
+    // Restore the valid calendar month without navigating backwards.
+    calendarMonthJump.value = toISODate(
+      clampCalendarMonth(calendarViewDate || localToday(), localToday()),
+    ).slice(0, 7);
+  }
+});
+
+calendarQuickActions?.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-cal-quick]");
+  if (!button) return;
+  const today = localToday();
+  const request = parseISODate(requestInput.value) || today;
+  const base = request > today ? request : today;
+  switch (button.dataset.calQuick) {
+    case "today":
+      goToCalendarMonth(today);
+      return;
+    case "next-month":
+      goToCalendarMonth(addMonths(calendarViewDate || today, 1));
+      return;
+    case "safe": {
+      const safe = earliestSafeDate(base);
+      if (safe) selectStartDate(safe);
+      return;
+    }
+    case "7":
+    case "14":
+      selectStartDate(addDays(base, Number(button.dataset.calQuick)));
+      return;
+    default:
+      return;
+  }
 });
 
 calendarGrid?.addEventListener("pointerover", (event) => {
@@ -871,28 +927,21 @@ window.addEventListener("resize", hideHolidayPopover);
 window.addEventListener("scroll", hideHolidayPopover, true);
 
 calendarPrev?.addEventListener("click", () => {
-  calendarViewDate = addMonths(
-    calendarViewDate || startOfMonth(localToday()),
-    -1,
-  );
-  calculate();
+  const today = localToday();
+  if (!canVisitPreviousMonth(calendarViewDate || today, today)) return;
+  goToCalendarMonth(addMonths(calendarViewDate, -1));
 });
 
 calendarNext?.addEventListener("click", () => {
-  calendarViewDate = addMonths(
-    calendarViewDate || startOfMonth(localToday()),
-    1,
-  );
-  calculate();
+  goToCalendarMonth(addMonths(calendarViewDate || localToday(), 1));
 });
 
 calendarReset?.addEventListener("click", () => {
-  calendarViewDate = startOfMonth(
+  goToCalendarMonth(
     parseISODate(startInput.value) ||
-      parseISODate(requestInput.value) ||
-      localToday(),
+    parseISODate(requestInput.value) ||
+    localToday(),
   );
-  calculate();
 });
 
 form.addEventListener("input", calculate);
