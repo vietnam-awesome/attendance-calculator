@@ -17,6 +17,34 @@
     input[type="date"]::-webkit-calendar-picker-indicator { opacity:.6; cursor:pointer; }
     details > summary::-webkit-details-marker { display:none; }
 
+    /* Past dates and out-of-month placeholders are intentionally neutral.
+       They must never inherit the bright holiday/weekend/selection styling. */
+    .calendar-past,
+    .calendar-past:disabled {
+      background: #f8fafc !important;
+      border-color: #f1f5f9 !important;
+      color: #cbd5e1 !important;
+      opacity: 1 !important;
+      cursor: default !important;
+      box-shadow: none !important;
+      outline: none !important;
+    }
+    .calendar-outside,
+    .calendar-outside:disabled {
+      background: #fbfcfe !important;
+      border-color: transparent !important;
+      color: #e2e8f0 !important;
+      opacity: 1 !important;
+      cursor: default !important;
+      box-shadow: none !important;
+      outline: none !important;
+    }
+    .calendar-past:disabled:hover,
+    .calendar-outside:disabled:hover {
+      transform: none !important;
+      box-shadow: none !important;
+    }
+
     /* Standard Saturday/Sunday rest days: separate from green attendance and red public holidays. */
     .calendar-weekend {
       position: relative;
