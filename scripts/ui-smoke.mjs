@@ -44,6 +44,16 @@ try {
     const input = page.locator("#request-date + input");
     await input.click();
     await page.locator(".flatpickr-calendar.open").first().waitFor();
+    await page.waitForTimeout(250);
+    const popupStyle = await page.locator(".flatpickr-calendar.open").first().evaluate((element) => ({
+      opacity: getComputedStyle(element).opacity,
+      background: getComputedStyle(element).backgroundColor,
+      animation: getComputedStyle(element).animationName,
+    }));
+    assert.equal(popupStyle.opacity, "1", `${viewport.name} date picker must be fully opaque`);
+    assert.equal(popupStyle.background, "rgb(255, 255, 255)",
+      `${viewport.name} date picker must have an opaque white background`);
+    assert.equal(popupStyle.animation, "none", `${viewport.name} popup must not flicker`);
     const bounds = await page.locator(".flatpickr-calendar.open").first().boundingBox();
     assert.ok(bounds && bounds.x >= -4 && bounds.x + bounds.width <= viewport.width + 4,
       `${viewport.name} popup fits viewport: ${JSON.stringify(bounds)}`);
