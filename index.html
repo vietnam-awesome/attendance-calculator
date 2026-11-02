@@ -279,38 +279,64 @@
       </form>
     </section>
 
-    <section class="mt-4 grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_370px]">
+    <section class="mt-4 grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_310px]">
       <div class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-        <div class="border-b border-slate-100 px-4 py-3.5 sm:px-5">
-          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div><p class="text-[10px] font-bold uppercase tracking-[.14em] text-violet-600">Calendar overview</p><h2 class="mt-1 text-lg font-bold tracking-tight text-slate-950">Chọn ngày nghỉ trên lịch</h2><p class="mt-0.5 text-xs leading-5 text-slate-400">Tự mở tháng hiện tại; ngày trước mốc tính được làm mờ và ngày nghỉ có màu riêng.</p></div>
-            <div class="flex flex-wrap items-center gap-1.5 self-start sm:self-auto">
-              <button type="button" id="calendar-prev" aria-label="Tháng trước" title="Không thể quay về trước tháng hiện tại" class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-900 disabled:cursor-not-allowed disabled:border-slate-100 disabled:bg-slate-50 disabled:text-slate-300 disabled:opacity-60"><svg viewBox="0 0 20 20" fill="none" class="size-3.5"><path d="m12.5 15-5-5 5-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-              <div id="calendar-title" class="min-w-28 text-center text-xs font-bold capitalize text-slate-800">—</div>
-              <button type="button" id="calendar-next" aria-label="Tháng sau" class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"><svg viewBox="0 0 20 20" fill="none" class="size-3.5"><path d="m7.5 15 5-5-5-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-              <label class="ml-1 flex h-8 items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2 text-[10px] font-semibold text-slate-600" title="Chuyển nhanh tháng và năm, chỉ từ tháng hiện tại">
-                <span class="hidden sm:inline">Tháng</span>
-                <input id="calendar-month-jump" aria-label="Chọn nhanh tháng và năm" type="month" max="2100-12" class="w-[120px] max-w-[34vw] cursor-pointer bg-transparent text-[11px] font-bold text-slate-700 outline-none focus:text-blue-700" />
-              </label>
-              <button type="button" id="calendar-reset" title="Chuyển đến tháng chứa ngày đang chọn" class="ml-1 rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-[10px] font-semibold text-slate-500 transition hover:bg-slate-50 hover:text-slate-900">Ngày đã chọn</button>
+        <div class="border-b border-slate-100 px-4 py-4 sm:px-5">
+          <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-3">
+            <div class="min-w-0">
+              <p class="text-[10px] font-bold uppercase tracking-[.12em] text-violet-500">Lịch dự kiến</p>
+              <h2 class="mt-1 text-base font-bold tracking-tight text-slate-950 sm:text-lg">Chọn ngày nghỉ</h2>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <button type="button" id="calendar-prev" aria-label="Tháng trước" title="Không thể về trước tháng hiện tại" class="flex size-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-300 disabled:opacity-60"><svg viewBox="0 0 20 20" fill="none" class="size-4" aria-hidden="true"><path d="m12.5 15-5-5 5-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              <div id="calendar-title" class="min-w-[122px] text-center text-xs font-bold text-slate-800 sm:min-w-[140px]">—</div>
+              <button type="button" id="calendar-next" aria-label="Tháng sau" class="flex size-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50"><svg viewBox="0 0 20 20" fill="none" class="size-4" aria-hidden="true"><path d="m7.5 15 5-5-5-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              <details id="calendar-more-menu" class="group relative">
+                <summary class="flex h-9 cursor-pointer list-none items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-50" aria-label="Tùy chọn lịch">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="size-4" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18"/></svg>
+                  <span class="hidden sm:inline">Chọn tháng</span><span class="sm:hidden">Tháng</span>
+                  <svg viewBox="0 0 20 20" fill="none" class="size-3 transition group-open:rotate-180" aria-hidden="true"><path d="m5 7.5 5 5 5-5" stroke="currentColor" stroke-width="1.7"/></svg>
+                </summary>
+                <div class="absolute right-0 top-11 z-30 w-[245px] max-w-[calc(100vw-36px)] rounded-xl border border-slate-200 bg-white p-3 shadow-xl shadow-slate-300/25">
+                  <label for="calendar-month-jump" class="block text-[11px] font-semibold text-slate-600">Chuyển đến tháng/năm</label>
+                  <input id="calendar-month-jump" aria-label="Chọn tháng và năm" type="month" max="2100-12" class="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-2 text-sm font-semibold text-slate-800 outline-none focus:border-blue-500" />
+                  <div class="mt-2 grid grid-cols-2 gap-2">
+                    <button id="calendar-this-month" type="button" class="rounded-lg border border-blue-100 bg-blue-50 px-2 py-2 text-[11px] font-semibold text-blue-700 hover:bg-blue-100">Tháng này</button>
+                    <button type="button" id="calendar-reset" title="Chuyển tới tháng chứa ngày đang chọn" class="rounded-lg border border-slate-200 px-2 py-2 text-[11px] font-semibold text-slate-700 hover:bg-slate-50">Ngày đã chọn</button>
+                  </div>
+                </div>
+              </details>
             </div>
           </div>
-          <div id="calendar-quick-actions" aria-label="Chọn nhanh ngày và tháng" class="mt-3 flex flex-wrap items-center gap-1.5">
-            <span class="mr-1 text-[10px] font-bold uppercase tracking-wide text-slate-400">Chọn nhanh</span>
-            <button type="button" data-cal-quick="today" class="rounded-full border border-blue-100 bg-blue-50 px-3 py-1.5 text-[11px] font-semibold text-blue-700 transition hover:bg-blue-100">Tháng này</button>
-            <button type="button" data-cal-quick="safe" class="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold text-emerald-700 transition hover:bg-emerald-100">Ngày an toàn gần nhất</button>
-            <button type="button" data-cal-quick="7" class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-50">+7 ngày</button>
-            <button type="button" data-cal-quick="14" class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-50">+14 ngày</button>
-            <button type="button" data-cal-quick="next-month" class="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-50">Tháng sau</button>
+          <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
+            <div id="calendar-quick-actions" aria-label="Chọn nhanh ngày nghỉ" class="flex flex-wrap items-center gap-1.5">
+              <button type="button" data-cal-quick="safe" class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-[11px] font-bold text-emerald-700 transition hover:bg-emerald-100">Ngày an toàn gần nhất</button>
+              <button type="button" data-cal-quick="7" class="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50">+7 ngày</button>
+              <button type="button" data-cal-quick="14" class="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 transition hover:border-slate-300 hover:bg-slate-50">+14 ngày</button>
+            </div>
+            <span class="text-[10px] text-slate-400">Chọn ngày làm việc để xem điểm dự kiến</span>
           </div>
-          <div id="calendar-meta" class="mt-2.5 flex flex-wrap gap-1.5"></div>
+          <div id="calendar-meta" class="mt-2.5 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-500"></div>
         </div>
 
         <div class="px-3 pb-3 pt-1.5 sm:px-4 sm:pb-4">
           <div class="grid grid-cols-7 gap-1.5 px-1 py-2 text-center text-[10px] font-bold uppercase tracking-wide text-slate-400 sm:gap-2"><span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span class="font-extrabold text-violet-600">T7</span><span class="font-extrabold text-indigo-600">CN</span></div>
           <div id="calendar-grid" class="grid grid-cols-7 gap-1.5 sm:gap-2"></div>
-          <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-[10px] font-medium text-slate-400">
-            <span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-emerald-400"></i>An toàn</span><span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-violet-400"></i>Cuối tuần (nghỉ)</span><span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-rose-500"></i>Ngày lễ</span><span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-sky-400"></i>Lịch tham khảo</span><span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-amber-400"></i>Cảnh báo -1</span><span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-rose-400"></i>Vi phạm -2</span><span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-slate-300"></i>Đã qua</span><span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-blue-500"></i>Mốc tính</span><span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-violet-500"></i>Ngày nghỉ</span>
+          <div class="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-slate-100 pt-3 text-[10px] font-medium text-slate-500">
+            <span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-emerald-500"></i>Đủ hạn</span>
+            <span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-amber-400"></i>Trừ 1</span>
+            <span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-rose-400"></i>Trừ 2</span>
+            <span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-violet-400"></i>Cuối tuần</span>
+            <span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-rose-600"></i>Ngày lễ</span>
+            <span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-slate-300"></i>Đã qua</span>
+            <details class="relative ml-auto text-slate-500">
+              <summary class="cursor-pointer list-none text-[10px] font-semibold text-blue-600 hover:text-blue-700">Chú giải thêm</summary>
+              <div class="absolute bottom-full right-0 z-20 mb-2 w-[230px] rounded-lg border border-slate-200 bg-white p-3 text-[11px] leading-5 shadow-lg">
+                <p><span class="font-bold text-sky-600">Xanh dương:</span> lịch nghỉ khối nhà nước tham khảo.</p>
+                <p><span class="font-bold text-blue-600">Chấm xanh:</span> mốc tính.</p>
+                <p><span class="font-bold text-violet-600">Viền tím:</span> ngày nghỉ đã chọn.</p>
+              </div>
+            </details>
           </div>
         </div>
       </div>
@@ -318,20 +344,30 @@
       <aside class="space-y-3 xl:sticky xl:top-4">
         <div id="result" class="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm" aria-live="polite"></div>
 
-        <section class="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-sm">
-          <div class="flex items-start justify-between gap-2">
-            <div><p class="text-[10px] font-bold uppercase tracking-[.12em] text-teal-600">Public holidays · Việt Nam</p><h3 class="mt-1 text-sm font-bold text-slate-900">Lịch nghỉ lễ Việt Nam</h3></div>
-            <span class="rounded-full bg-teal-50 px-2 py-1 text-[10px] font-semibold text-teal-700">Từ 2026</span>
+        <section class="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
+          <div class="flex items-center justify-between gap-2">
+            <div><p class="text-[10px] font-bold uppercase tracking-wide text-rose-500">Việt Nam</p><h3 class="mt-1 text-sm font-bold text-slate-900">Ngày lễ sắp tới</h3></div>
+            <span class="rounded-md bg-rose-50 px-2 py-1 text-[10px] font-semibold text-rose-700">Ngày lễ</span>
           </div>
-          <p class="mt-1.5 text-[11px] leading-5 text-slate-500">Nhấn một dịp lễ để chuyển lịch đến tháng tương ứng. Lịch hiển thị theo năm đang xem.</p>
           <div id="holiday-list" class="mt-2 divide-y divide-slate-100"></div>
-          <p id="holiday-note" class="mt-3 border-t border-slate-100 pt-3 text-[10px] leading-4 text-slate-500"></p>
+          <button type="button" id="holiday-list-more" class="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-50" aria-expanded="false">Xem tất cả ngày lễ</button>
+          <details class="mt-3 border-t border-slate-100 pt-2">
+            <summary class="cursor-pointer text-[11px] font-semibold text-slate-500">Nguồn và lưu ý lịch nghỉ</summary>
+            <p id="holiday-note" class="mt-2 text-[11px] leading-5 text-slate-500"></p>
+          </details>
         </section>
 
-        <div class="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-sm">
-          <div class="flex items-center justify-between"><div><p class="text-[10px] font-bold uppercase tracking-[.12em] text-slate-400">Mốc cần nhớ</p><h3 class="mt-1 text-sm font-bold text-slate-900">Quy tắc báo trước</h3></div><svg viewBox="0 0 24 24" fill="none" class="size-5 text-slate-300"><path d="M12 8v4m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></div>
-          <div class="mt-2 divide-y divide-slate-100 text-[11px]"><div class="flex items-center justify-between gap-3 py-1.5"><span class="text-slate-500">Trễ / về sớm / nửa ngày</span><strong class="text-slate-800">≥ 2 ngày</strong></div><div class="flex items-center justify-between gap-3 py-1.5"><span class="text-slate-500">Nghỉ 1–6 ngày</span><strong class="text-slate-800">≥ 1 tuần</strong></div><div class="flex items-center justify-between gap-3 py-1.5"><span class="text-slate-500">Nghỉ 7–29 ngày</span><strong class="text-slate-800">≥ 1 tháng</strong></div><div class="flex items-center justify-between gap-3 py-1.5"><span class="text-slate-500">Nghỉ từ 30 ngày</span><strong class="text-slate-800">≥ 2 tháng</strong></div></div>
-        </div>
+        <details class="group rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
+          <summary class="flex cursor-pointer list-none items-center justify-between gap-2 text-xs font-bold text-slate-700">
+            Quy tắc báo trước <svg viewBox="0 0 20 20" fill="none" class="size-4 text-slate-400 transition group-open:rotate-180" aria-hidden="true"><path d="m5 7.5 5 5 5-5" stroke="currentColor" stroke-width="1.7"/></svg>
+          </summary>
+          <div class="mt-3 divide-y divide-slate-100 border-t border-slate-100 pt-2 text-[11px]">
+            <div class="flex justify-between gap-2 py-1.5"><span class="text-slate-500">Trễ / về sớm / nửa ngày</span><strong>≥ 2 ngày</strong></div>
+            <div class="flex justify-between gap-2 py-1.5"><span class="text-slate-500">Nghỉ 1–6 ngày</span><strong>≥ 1 tuần</strong></div>
+            <div class="flex justify-between gap-2 py-1.5"><span class="text-slate-500">Nghỉ 7–29 ngày</span><strong>≥ 1 tháng</strong></div>
+            <div class="flex justify-between gap-2 py-1.5"><span class="text-slate-500">Nghỉ từ 30 ngày</span><strong>≥ 2 tháng</strong></div>
+          </div>
+        </details>
       </aside>
     </section>
 
