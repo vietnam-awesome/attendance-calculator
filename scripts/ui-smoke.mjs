@@ -25,7 +25,7 @@ try {
             window.__dateValueTraces.push({
               id: this.id, before: prev, passed: String(next),
               after: desc.get.call(this), inputType: this.type,
-              stack: new Error().stack?.split("\\n").slice(1, 5).join(" > "),
+              stack: new Error().stack?.split("\n").slice(1, 5).join(" > "),
             });
           }
         },
