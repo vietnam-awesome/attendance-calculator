@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import {
   getCalendarDayKind, getCalendarCellState, isLeaveCandidateDay, isWeekend,
   clampCalendarMonth, canVisitPreviousMonth, parseFutureCalendarMonth,
-  nextLeaveCandidate,
+  nextLeaveCandidate, calendarWeekCount,
 } from "../src/calendar-days.js";
 
 const date = (value) => {
@@ -135,4 +135,11 @@ test("quick selection handles year boundary and invalid dates", () => {
   assert.equal(value.getMonth(), 0);
   assert.equal(value.getDate(), 4);
   assert.equal(nextLeaveCandidate(new Date(NaN)), null);
+});
+
+test("month grid does not include an unused sixth row", () => {
+  assert.equal(calendarWeekCount(date("2026-10-01")), 5);
+  assert.equal(calendarWeekCount(date("2026-11-01")), 6);
+  assert.equal(calendarWeekCount(date("2027-02-01")), 4);
+  assert.equal(calendarWeekCount(new Date(NaN)), 0);
 });
