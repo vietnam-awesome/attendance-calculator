@@ -13,7 +13,7 @@ import {
   getVietnamHolidays,
   isVerifiedLunarHolidayYear,
 } from "./vietnam-holidays.js";
-import { isWeekend, isLeaveCandidateDay } from "./calendar-days.js";
+import { isWeekend, isLeaveCandidateDay, getCalendarCellState } from "./calendar-days.js";
 import { restorePlanningDates, initialCalendarMonth } from "./planner-state.js";
 
 const $ = (selector) => document.querySelector(selector);
@@ -549,53 +549,57 @@ function renderCalendar(data, requestDate, startDate, endDate) {
 
   for (let index = 0; index < 42; index += 1) {
     const date = addDays(gridStart, index);
-    const current =
-      date.getMonth() === month.getMonth() &&
-      date.getFullYear() === month.getFullYear();
-    const beforeReference = current && requestDate && isBefore(date, requestDate);
+    const cell = getCalendarCellState(date, month, requestDate, today);
+    const current = cell.inMonth;
+    const past = cell.past;
+    const active = cell.showIndicators;
     const evaluation =
-      current && !beforeReference && !isWeekend(date) ? evaluateCandidate(date, requestDate) : null;
+      active && !isWeekend(date) ? evaluateCandidate(date, requestDate) : null;
     const deduction = evaluation?.deduction;
-    const holiday = current ? getHolidaysOnDate(date)[0] : null;
+    const holiday = active ? getHolidaysOnDate(date)[0] : null;
     const isPublicHoliday = Boolean(holiday);
     const isReferenceHoliday = holiday?.kind === "reference";
-    const weekend = current && isWeekend(date);
+    const weekend = active && isWeekend(date);
     const saturday = weekend && date.getDay() === 6;
 
     let status = "border-transparent bg-slate-50/60 text-slate-300";
     let label = "";
     let selectable = false;
 
-    if (current && isPublicHoliday) {
+    if (!current) {
+      // Previous/next-month placeholders never contain a selectable day,
+      // current-day ring, selection outline, or status indicators.
+      status = "calendar-outside";
+    } else if (past) {
+      // Past days are always neutral, including past weekends and holidays.
+      status = "calendar-past";
+      label = "ĐÃ QUA";
+    } else if (isPublicHoliday) {
       status = isReferenceHoliday
         ? "calendar-holiday calendar-holiday--reference"
         : "calendar-holiday calendar-holiday--official";
       label = isReferenceHoliday ? "LỊCH NGHỈ" : "NGÀY LỄ";
-      selectable = !beforeReference && isLeaveCandidateDay(date);
+      selectable = cell.selectable;
     } else if (weekend) {
       status = saturday
         ? "calendar-weekend calendar-weekend--saturday"
         : "calendar-weekend calendar-weekend--sunday";
       label = "NGÀY NGHỈ";
-      selectable = false;
-    } else if (beforeReference) {
-      status = "border-slate-100 bg-slate-50/80 text-slate-300 opacity-60";
-      label = "Đã qua";
-    } else if (current && deduction === 0) {
+    } else if (deduction === 0) {
       status = "border-emerald-100 bg-emerald-50/90 hover:bg-emerald-100";
       label = "An toàn";
-      selectable = true;
-    } else if (current && deduction === 1) {
+      selectable = cell.selectable;
+    } else if (deduction === 1) {
       status = "border-amber-100 bg-amber-50/90 hover:bg-amber-100";
       label = "-1";
-      selectable = true;
-    } else if (current && deduction >= 2) {
+      selectable = cell.selectable;
+    } else if (deduction >= 2) {
       status = "border-rose-100 bg-rose-50/90 hover:bg-rose-100";
       label = "-2";
-      selectable = true;
-    } else if (current) {
+      selectable = cell.selectable;
+    } else {
       status = "border-slate-100 bg-white";
-      selectable = Boolean(requestDate);
+      selectable = cell.selectable;
     }
 
     const classes = [
@@ -604,40 +608,38 @@ function renderCalendar(data, requestDate, startDate, endDate) {
       selectable || isPublicHoliday ? "cursor-pointer" : "cursor-default",
     ];
 
-    if (weekend && beforeReference) classes.push("opacity-65");
-
-    if (inRange(date, startDate, actualEnd)) {
+    if (active && inRange(date, startDate, actualEnd)) {
       classes.push("outline outline-2 outline-offset-[-2px] outline-violet-500");
     }
-    if (sameDate(date, requestDate)) {
+    if (active && sameDate(date, requestDate)) {
       classes.push("ring-2 ring-inset ring-blue-500");
     }
-    if (sameDate(date, deadline)) {
+    if (active && sameDate(date, deadline)) {
       classes.push("shadow-[inset_0_0_0_2px_rgba(245,158,11,.8)]");
     }
-    if (sameDate(date, today)) {
+    if (active && sameDate(date, today)) {
       classes.push(
         "after:pointer-events-none after:absolute after:inset-1 after:rounded-lg after:border after:border-dashed after:border-slate-500/60",
       );
     }
 
-    const labelClass = beforeReference && !isPublicHoliday && !weekend
+    const labelClass = past || !current
       ? "text-slate-300"
       : isPublicHoliday
         ? isReferenceHoliday ? "text-sky-700" : "text-rose-700"
         : weekend ? (saturday ? "text-violet-700" : "text-indigo-700")
         : deduction === 0
-        ? "text-emerald-700"
-        : deduction === 1
-          ? "text-amber-700"
-          : "text-rose-700";
+          ? "text-emerald-700"
+          : deduction === 1
+            ? "text-amber-700"
+            : "text-rose-700";
 
     const dataAttribute = selectable
       ? `data-calendar-date="${toISODate(date)}"`
       : isPublicHoliday ? 'aria-disabled="true"' : "disabled";
     const holidayAttribute = isPublicHoliday
       ? `data-holiday-date="${toISODate(date)}" aria-describedby="calendar-holiday-tooltip" aria-label="${formatDateVN(date)}, ${holiday.name}. ${isReferenceHoliday ? "Lịch tham khảo" : "Ngày lễ chính thức"}"`
-      : `title="${formatDateVN(date)}${weekend ? " · Ngày nghỉ cuối tuần (lịch T2–T6)" : label ? ` · ${label}` : ""}"`;
+      : `title="${formatDateVN(date)}${past ? " · Đã qua" : weekend ? " · Ngày nghỉ cuối tuần (lịch T2–T6)" : label ? ` · ${label}` : ""}"`;
     const holidayIcon = isReferenceHoliday
       ? '<svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M8 15h8"/></svg>'
       : '<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 2.9 6.5 7.1.8-5.3 4.8 1.5 7-6.2-3.6-6.2 3.6 1.5-7L2 9.3l7.1-.8z"/></svg>';
@@ -645,12 +647,12 @@ function renderCalendar(data, requestDate, startDate, endDate) {
     cells.push(`
       <button type="button" ${dataAttribute} ${holidayAttribute} class="${classes.join(" ")}">
         <div class="flex items-start justify-between gap-1">
-          <span class="flex size-6 items-center justify-center rounded-lg text-[11px] font-bold ${isPublicHoliday ? "calendar-holiday__date" : sameDate(date, today) ? "bg-slate-900 text-white" : current ? beforeReference ? "text-slate-300" : "text-slate-800" : "text-slate-300"}">${date.getDate()}</span>
+          <span class="flex size-6 items-center justify-center rounded-lg text-[11px] font-bold ${isPublicHoliday ? "calendar-holiday__date" : active && sameDate(date, today) ? "bg-slate-900 text-white" : active ? "text-slate-800" : "text-slate-300"}">${date.getDate()}</span>
           <span class="flex items-center gap-1">
             ${isPublicHoliday ? `<span class="calendar-holiday__icon">${holidayIcon}</span>` : weekend ? '<span class="calendar-weekend__icon" aria-hidden="true">☾</span>' : ""}
-            ${sameDate(date, requestDate) ? '<i class="size-1.5 rounded-full bg-blue-500"></i>' : ""}
-            ${sameDate(date, deadline) ? '<i class="size-1.5 rounded-full bg-amber-500"></i>' : ""}
-            ${inRange(date, startDate, actualEnd) ? '<i class="size-1.5 rounded-full bg-violet-500"></i>' : ""}
+            ${active && sameDate(date, requestDate) ? '<i class="size-1.5 rounded-full bg-blue-500"></i>' : ""}
+            ${active && sameDate(date, deadline) ? '<i class="size-1.5 rounded-full bg-amber-500"></i>' : ""}
+            ${active && inRange(date, startDate, actualEnd) ? '<i class="size-1.5 rounded-full bg-violet-500"></i>' : ""}
           </span>
         </div>
         ${isPublicHoliday
@@ -662,7 +664,9 @@ function renderCalendar(data, requestDate, startDate, endDate) {
             ? `<div class="mt-1.5 text-[8px] font-extrabold uppercase tracking-wide ${labelClass}">
                  <span class="sm:hidden">NGHỈ</span><span class="hidden sm:inline">NGÀY NGHỈ</span>
                </div>`
-            : label ? `<div class="mt-2 hidden text-[8px] font-extrabold uppercase tracking-wide ${labelClass} sm:block">${label}</div>` : ""}
+            : past
+              ? '<div class="mt-2 hidden text-[8px] font-semibold uppercase tracking-wide text-slate-300 sm:block">ĐÃ QUA</div>'
+              : label ? `<div class="mt-2 hidden text-[8px] font-extrabold uppercase tracking-wide ${labelClass} sm:block">${label}</div>` : ""}
       </button>
     `);
   }
