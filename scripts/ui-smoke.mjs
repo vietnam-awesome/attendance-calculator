@@ -29,6 +29,20 @@ try {
         };
       });
     });
+    console.log("Browser diagnostics", viewport.name, JSON.stringify({
+      dateValues,
+      pickerDetails: await page.evaluate(() => {
+        const input = document.querySelector("#request-date");
+        return {
+          type: input.type, value: input.value, html: input.outerHTML,
+          dates: input._flatpickr?.selectedDates?.map(x=>x.toString()),
+          defaultDate: input._flatpickr?.config?.defaultDate,
+          alt: input._flatpickr?.altInput?.outerHTML,
+          result: document.querySelector("#result")?.innerText?.slice(0,250),
+        };
+      }),
+    }));
+    await page.screenshot({ path: `screenshots/${viewport.name}-initial.png`, fullPage: true });
     for (const field of dateValues) {
       assert.ok(field.picker, `${viewport.name} ${field.id} should use Flatpickr`);
       assert.match(field.value, /^\d{4}-\d{2}-\d{2}$/, `${field.id} ISO date`);
