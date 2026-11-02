@@ -177,10 +177,12 @@ export function initDatePickers({
           pickers.month.set("minDate", min);
         }
       }
-      synchronizeDate(pickers.request, request, "Y-m-d");
-      synchronizeDate(pickers.start, start, "Y-m-d");
-      synchronizeDate(pickers.end, end, "Y-m-d");
-      synchronizeDate(pickers.month, month, "Y-m");
+      // Partial updates must never clear unrelated fields. RenderCalendar only
+      // sends `month`, while Calculate sends `request/start/end`.
+      if (request !== undefined) synchronizeDate(pickers.request, request, "Y-m-d");
+      if (start !== undefined) synchronizeDate(pickers.start, start, "Y-m-d");
+      if (end !== undefined) synchronizeDate(pickers.end, end, "Y-m-d");
+      if (month !== undefined) synchronizeDate(pickers.month, month, "Y-m");
     },
     destroy() {
       for (const picker of Object.values(pickers)) picker.destroy();
