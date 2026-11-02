@@ -61,3 +61,42 @@ export function getCalendarCellState(date, viewMonth, requestDate, today) {
     showIndicators: inMonth && !past,
   };
 }
+
+function firstOfMonth(date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+// Restrict calendar navigation to the current month and future months. This
+// operates on month boundaries, not full timestamps, to avoid locale/time bugs.
+export function clampCalendarMonth(target, today) {
+  if (!validDate(target) || !validDate(today)) return null;
+  const wanted = firstOfMonth(target);
+  const minimum = firstOfMonth(today);
+  return wanted < minimum ? minimum : wanted;
+}
+
+export function canVisitPreviousMonth(viewDate, today) {
+  if (!validDate(viewDate) || !validDate(today)) return false;
+  return firstOfMonth(viewDate) > firstOfMonth(today);
+}
+
+// Native input[type=month] uses YYYY-MM: validate rather than normalizing an
+// invalid value (e.g., 2026-13) to an unrelated year.
+export function parseFutureCalendarMonth(value, today) {
+  if (typeof value !== "string" || !/^\\d{4}-(0[1-9]|1[0-2])$/.test(value) ||
+      !validDate(today)) return null;
+  const [year, month] = value.split("-").map(Number);
+  if (year < 1900 || year > 2100) return null;
+  const target = new Date(year, month - 1, 1);
+  return target < firstOfMonth(today) ? null : target;
+}
+
+export function nextLeaveCandidate(from, { inclusive = true, maxDays = 400 } = {}) {
+  if (!validDate(from)) return null;
+  const start = new Date(from.getFullYear(), from.getMonth(), from.getDate() + (inclusive ? 0 : 1));
+  for (let i = 0; i <= maxDays; i += 1) {
+    const day = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+    if (isLeaveCandidateDay(day)) return day;
+  }
+  return null;
+}
