@@ -55,6 +55,8 @@ Danh mục độc lập với chính sách từng doanh nghiệp, không có d�
 - **Lịch tham khảo:** ngày liền kề Quốc khánh đã công bố cho cơ quan nhà nước, ngày nghỉ bù / hoán đổi đã xác minh. Hiển thị tách màu, không khẳng định bắt buộc áp dụng cho mọi doanh nghiệp.
 - **Các năm khác:** chỉ hiển thị ngày dương lịch cố định. Không tự suy đoán lịch âm hoặc lịch nghỉ bù chưa xác nhận.
 - Các kỳ nghỉ có thể có ngày nghỉ hằng tuần nằm giữa; ngày lễ được hiển thị trên calendar và trong bảng danh sách sắp tới.
+- Trên calendar, **ngày lễ chính thức** có nền đỏ hồng, biểu tượng ngôi sao và tên ngày lễ; **lịch khối nhà nước tham khảo** có nền xanh dương, biểu tượng lịch.
+- Di chuột hoặc focus bàn phím vào ngày lễ để xem **tooltip chi tiết** (tên, ngày, loại lễ, ghi chú); trên điện thoại có thể chạm để xem. Tooltip được gắn vào body nên không bị cắt ở biên calendar.
 - **Không tự động trừ ngày lễ khỏi số ngày xin phép / điểm chuyên cần**, vì lịch doanh nghiệp và cơ chế nghỉ bù có thể khác. Chỉ có cảnh báo thông tin khi chọn kỳ nghỉ trùng lễ.
 
 Nguồn công khai:
