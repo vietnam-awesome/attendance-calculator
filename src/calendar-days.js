@@ -100,3 +100,13 @@ export function nextLeaveCandidate(from, { inclusive = true, maxDays = 400 } = {
   }
   return null;
 }
+
+// Render only the week rows actually required by a month. For example,
+// October 2026 fits in five rows while November 2026 requires six.
+export function calendarWeekCount(viewMonth) {
+  if (!validDate(viewMonth)) return 0;
+  const first = new Date(viewMonth.getFullYear(), viewMonth.getMonth(), 1);
+  const mondayOffset = (first.getDay() + 6) % 7;
+  const daysInMonth = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+  return Math.ceil((mondayOffset + daysInMonth) / 7);
+}
