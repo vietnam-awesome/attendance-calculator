@@ -17,6 +17,43 @@
     input[type="date"]::-webkit-calendar-picker-indicator { opacity:.6; cursor:pointer; }
     details > summary::-webkit-details-marker { display:none; }
 
+    /* Standard Saturday/Sunday rest days: separate from green attendance and red public holidays. */
+    .calendar-weekend {
+      position: relative;
+      isolation: isolate;
+      cursor: default !important;
+      border-width: 1px !important;
+      background: linear-gradient(140deg, var(--rest-start), var(--rest-end)) !important;
+      border-color: var(--rest-border) !important;
+      color: var(--rest-ink);
+      transition: border-color .15s ease, background .15s ease;
+    }
+    .calendar-weekend--saturday {
+      --rest-start: #f5f3ff;
+      --rest-end: #ede9fe;
+      --rest-border: #ddd6fe;
+      --rest-ink: #6d28d9;
+    }
+    .calendar-weekend--sunday {
+      --rest-start: #eef2ff;
+      --rest-end: #e0e7ff;
+      --rest-border: #c7d2fe;
+      --rest-ink: #4338ca;
+    }
+    .calendar-weekend__icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 19px;
+      height: 19px;
+      border-radius: 6px;
+      color: var(--rest-ink);
+      background: rgba(255, 255, 255, .75);
+      font-size: 14px;
+    }
+    .calendar-weekend[disabled] { opacity: 1; }
+    .calendar-weekend[disabled].opacity-65 { opacity: .65; }
+
     /* Holiday tiles intentionally differ from emerald attendance-success tiles. */
     .calendar-holiday {
       position: relative;
@@ -218,7 +255,7 @@
       <div class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
         <div class="border-b border-slate-100 px-4 py-3.5 sm:px-5">
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div><p class="text-[10px] font-bold uppercase tracking-[.14em] text-violet-600">Calendar overview</p><h2 class="mt-1 text-lg font-bold tracking-tight text-slate-950">Chọn ngày nghỉ trên lịch</h2><p class="mt-0.5 text-xs leading-5 text-slate-400">Ngày trước mốc tính được làm mờ; màu nền cho biết mức an toàn.</p></div>
+            <div><p class="text-[10px] font-bold uppercase tracking-[.14em] text-violet-600">Calendar overview</p><h2 class="mt-1 text-lg font-bold tracking-tight text-slate-950">Chọn ngày nghỉ trên lịch</h2><p class="mt-0.5 text-xs leading-5 text-slate-400">Ngày trước mốc tính được làm mờ; màu nền phân biệt ngày làm việc, cuối tuần và ngày lễ.</p></div>
             <div class="flex items-center gap-1.5 self-start sm:self-auto">
               <button type="button" id="calendar-prev" aria-label="Tháng trước" class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"><svg viewBox="0 0 20 20" fill="none" class="size-3.5"><path d="m12.5 15-5-5 5-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
               <div id="calendar-title" class="min-w-32 text-center text-xs font-bold capitalize text-slate-800">—</div>
@@ -230,10 +267,10 @@
         </div>
 
         <div class="px-3 pb-3 pt-1.5 sm:px-4 sm:pb-4">
-          <div class="grid grid-cols-7 gap-1.5 px-1 py-2 text-center text-[10px] font-bold uppercase tracking-wide text-slate-400 sm:gap-2"><span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span>T7</span><span>CN</span></div>
+          <div class="grid grid-cols-7 gap-1.5 px-1 py-2 text-center text-[10px] font-bold uppercase tracking-wide text-slate-400 sm:gap-2"><span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span class="font-extrabold text-violet-600">T7</span><span class="font-extrabold text-indigo-600">CN</span></div>
           <div id="calendar-grid" class="grid grid-cols-7 gap-1.5 sm:gap-2"></div>
           <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 border-t border-slate-100 pt-3 text-[10px] font-medium text-slate-400">
-            <span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-emerald-400"></i>An toàn</span><span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-rose-500"></i>Ngày lễ</span><span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-sky-400"></i>Lịch tham khảo</span><span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-amber-400"></i>Cảnh báo -1</span><span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-rose-400"></i>Vi phạm -2</span><span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-slate-300"></i>Đã qua</span><span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-blue-500"></i>Mốc tính</span><span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-violet-500"></i>Ngày nghỉ</span>
+            <span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-emerald-400"></i>An toàn</span><span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-violet-400"></i>Cuối tuần (nghỉ)</span><span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-rose-500"></i>Ngày lễ</span><span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-sky-400"></i>Lịch tham khảo</span><span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-amber-400"></i>Cảnh báo -1</span><span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-rose-400"></i>Vi phạm -2</span><span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-slate-300"></i>Đã qua</span><span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-blue-500"></i>Mốc tính</span><span class="inline-flex items-center gap-1.5"><i class="size-2 rounded-full bg-violet-500"></i>Ngày nghỉ</span>
           </div>
         </div>
       </div>
@@ -258,7 +295,7 @@
       </aside>
     </section>
 
-    <footer class="mt-4 flex flex-col gap-2 border-t border-slate-200/70 py-3 text-[10px] text-slate-400 sm:flex-row sm:items-center sm:justify-between"><span>Lịch lễ Việt Nam chỉ tham khảo; nghỉ Tết/Quốc khánh, nghỉ bù, hoán đổi có thể khác theo đơn vị. Ngày lịch vẫn dùng để tính thời hạn báo trước.</span><span>Local-only · No backend</span></footer>
+    <footer class="mt-4 flex flex-col gap-2 border-t border-slate-200/70 py-3 text-[10px] text-slate-400 sm:flex-row sm:items-center sm:justify-between"><span>Lịch mặc định nghỉ T7/CN (làm việc T2–T6); lịch lễ và nghỉ bù thực tế có thể khác theo đơn vị. Thời hạn báo trước vẫn tính theo ngày lịch.</span><span>Local-only · No backend</span></footer>
   </main>
 
   <script type="module" src="./src/app.js"></script>
