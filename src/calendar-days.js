@@ -25,3 +25,39 @@ export function isLeaveCandidateDay(date) {
   }
   return !getHolidaysOnDate(date).some((holiday) => holiday.kind === "statutory");
 }
+
+function validDate(value) {
+  return value instanceof Date && !Number.isNaN(value.getTime());
+}
+
+function calendarDayNumber(date) {
+  return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86_400_000;
+}
+
+// A day outside the viewed month is a placeholder, never an interactive date.
+// All past dates use one neutral style, even if they were weekends or holidays.
+// Use both today's date and the chosen request date as the earliest selectable
+// boundary, so manual changes cannot accidentally enable dates in the past.
+export function getCalendarCellState(date, viewMonth, requestDate, today) {
+  if (!validDate(date) || !validDate(viewMonth) || !validDate(today)) {
+    return {
+      kind: "outside", inMonth: false, past: false,
+      selectable: false, showIndicators: false,
+    };
+  }
+  const inMonth = date.getFullYear() === viewMonth.getFullYear() &&
+    date.getMonth() === viewMonth.getMonth();
+  const cutoff = Math.max(
+    calendarDayNumber(today),
+    validDate(requestDate) ? calendarDayNumber(requestDate) : -Infinity,
+  );
+  const past = inMonth && calendarDayNumber(date) < cutoff;
+  const kind = !inMonth ? "outside" : past ? "past" : getCalendarDayKind(date);
+  return {
+    kind,
+    inMonth,
+    past,
+    selectable: inMonth && !past && isLeaveCandidateDay(date),
+    showIndicators: inMonth && !past,
+  };
+}
