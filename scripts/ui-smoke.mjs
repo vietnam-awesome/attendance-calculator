@@ -4,7 +4,7 @@ import { mkdir } from "node:fs/promises";
 
 const URL = "http://127.0.0.1:8765/";
 await mkdir("screenshots", { recursive: true });
-const browser = await chromium.launch({ headless: true });
+const browser = await chromium.launch({ headless: true, ...(process.env.USE_SYSTEM_CHROME ? { channel: "chrome" } : {}) });
 const failures = [];
 try {
   for (const viewport of [
