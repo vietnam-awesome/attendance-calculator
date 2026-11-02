@@ -8,6 +8,9 @@ Công cụ cá nhân giúp tự kiểm tra ngày dự định nghỉ có vượt
 
 - Điểm hiện tại mặc định: **96/100** (có thể chỉnh).
 - Kiểm tra đi trễ, về sớm, nghỉ nửa ngày và nghỉ từ 1 ngày trở lên.
+- Hiển thị ngày lễ chính thức của Việt Nam trên lịch, tách riêng lịch nghỉ bù/hoán đổi **tham khảo**.
+- Danh sách ngày lễ theo năm đang xem; nhấn vào dịp lễ để chuyển nhanh tháng, chú thích kỳ nghỉ dự kiến trùng ngày lễ.
+- Có **Ngày Văn hóa Việt Nam 24/11** từ 2026; ngày âm lịch Tết/Giỗ Tổ chỉ đưa vào khi có dữ liệu năm đã xác minh.
 - Tự tính mốc báo trước: 2 ngày / 1 tuần / 1 tháng / 2 tháng.
 - Dự báo mức trừ **0 / 1 / 2 điểm**.
 - Hiển thị điểm sau dự kiến và Mức vi phạm 1–5.
@@ -42,6 +45,24 @@ npm test
 - Nghỉ từ 1 tuần: báo trước 1 tháng.
 - Nghỉ từ 1 tháng: báo trước 2 tháng.
 - Mức điểm: M1 77–88, M2 65–76, M3 53–64, M4 41–52, M5 ≤40; 89–100 chưa hình thành Mức 1.
+
+## Ngày nghỉ lễ Việt Nam
+
+Danh mục độc lập với chính sách từng doanh nghiệp, không có dữ liệu nội bộ công ty:
+
+- **Ngày cố định theo luật:** Tết Dương lịch 01/01, 30/04, 01/05, Quốc khánh 02/09 và Ngày Văn hóa Việt Nam 24/11 (từ 2026).
+- **Ngày theo âm lịch đã xác minh:** Giỗ Tổ Hùng Vương (10/03 âm) 26/04/2026, 16/04/2027; lịch Tết Nguyên đán **khối cơ quan nhà nước** năm 2026 và 2027.
+- **Lịch tham khảo:** ngày liền kề Quốc khánh đã công bố cho cơ quan nhà nước, ngày nghỉ bù / hoán đổi đã xác minh. Hiển thị tách màu, không khẳng định bắt buộc áp dụng cho mọi doanh nghiệp.
+- **Các năm khác:** chỉ hiển thị ngày dương lịch cố định. Không tự suy đoán lịch âm hoặc lịch nghỉ bù chưa xác nhận.
+- Các kỳ nghỉ có thể có ngày nghỉ hằng tuần nằm giữa; ngày lễ được hiển thị trên calendar và trong bảng danh sách sắp tới.
+- **Không tự động trừ ngày lễ khỏi số ngày xin phép / điểm chuyên cần**, vì lịch doanh nghiệp và cơ chế nghỉ bù có thể khác. Chỉ có cảnh báo thông tin khi chọn kỳ nghỉ trùng lễ.
+
+Nguồn công khai:
+
+- [Bộ luật Lao động 2019, Điều 112](https://vanban.org/van-ban/bo-luat-lao-dong-2019-45-2019-qh14/dieu-112)
+- [Ngày Văn hóa Việt Nam 24/11 — Cổng TTĐT Chính phủ](https://xaydungchinhsach.chinhphu.vn/ngay-24-11-hang-nam-la-ngay-van-hoa-viet-nam-nguoi-lao-dong-duoc-nghi-huong-nguyen-luong-119260113152642414.htm)
+- [Lịch Tết và Quốc khánh 2026 — Cổng TTĐT Chính phủ](https://baochinhphu.vn/bo-noi-vu-thong-bao-lich-nghi-tet-am-lich-va-nghi-le-quoc-khanh-nam-2026-102251017095507785.htm)
+- [Lịch Tết và Quốc khánh 2027 — Cổng TTĐT Chính phủ](https://xaydungchinhsach.chinhphu.vn/de-xuat-2-phuong-an-nghi-tet-nguyen-dan-2027-tet-dinh-mui-11926080513033257.htm)
 
 ## Preview PR
 
