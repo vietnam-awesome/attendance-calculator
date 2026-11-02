@@ -15,7 +15,10 @@ Công cụ cá nhân giúp tự kiểm tra ngày dự định nghỉ có vượt
 - Dự báo mức trừ **0 / 1 / 2 điểm**.
 - Hiển thị điểm sau dự kiến và Mức vi phạm 1–5.
 - Tự xác định kỳ điểm hiện tại: 01/12–31/05 hoặc 01/06–30/11.
-- Lưu lựa chọn gần nhất trong `localStorage` của trình duyệt.
+- Lưu điểm, tình huống và ngày dự định nghỉ trong `localStorage`. **Mốc tính tự lấy ngày hiện tại của thiết bị khi mở trang**, không giữ ngày cũ qua lần tải trang mới.
+- Lịch tự mở **tháng hiện tại**, ngay cả khi đã lưu ngày nghỉ tương lai; có thể dùng nút "Về ngày đã chọn" để quay đến tháng dự kiến nghỉ.
+- Ngày đã chọn trong quá khứ được chuyển sang ngày dự kiến hợp lệ gần nhất; ngày tương lai do người dùng chủ động chọn vẫn được giữ nguyên.
+- Khi để tab mở qua ngày mới, ngày tham chiếu tự cập nhật khi quay lại tab (trừ khi đang chỉnh thủ công mốc tính trong phiên).
 - UI responsive xây dựng bằng **Tailwind CSS v4**.
 - Không cần backend, framework hay API.
 
