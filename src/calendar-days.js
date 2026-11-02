@@ -83,7 +83,7 @@ export function canVisitPreviousMonth(viewDate, today) {
 // Native input[type=month] uses YYYY-MM: validate rather than normalizing an
 // invalid value (e.g., 2026-13) to an unrelated year.
 export function parseFutureCalendarMonth(value, today) {
-  if (typeof value !== "string" || !/^\\d{4}-(0[1-9]|1[0-2])$/.test(value) ||
+  if (typeof value !== "string" || !/^\d{4}-(0[1-9]|1[0-2])$/.test(value) ||
       !validDate(today)) return null;
   const [year, month] = value.split("-").map(Number);
   if (year < 1900 || year > 2100) return null;
