@@ -13,7 +13,7 @@ function iso(date) {
 }
 
 function parseLocalISO(value, isMonth = false) {
-  const pattern = isMonth ? /^(\\d{4})-(\\d{2})$/ : /^(\\d{4})-(\\d{2})-(\\d{2})$/;
+  const pattern = isMonth ? /^(\d{4})-(\d{2})$/ : /^(\d{4})-(\d{2})-(\d{2})$/;
   const match = typeof value === "string" ? value.match(pattern) : null;
   if (!match) return null;
   const year = Number(match[1]);
