@@ -22,6 +22,16 @@ function synchronizeDate(picker, canonicalValue, format) {
   if (selectedValue(picker, format) !== value) {
     picker.setDate(value, false, format);
   }
+
+  // Flatpickr's altInput is a *different DOM input*. The underlying canonical
+  // date may be valid even when the visible clone is accidentally blank.
+  // Explicitly keep the visible field in sync on first load and after shortcuts.
+  if (picker.altInput && picker.altInput.isConnected !== false) {
+    const selected = picker.selectedDates?.[0];
+    const altFormat = picker.config?.altFormat || (format === "Y-m" ? "m/Y" : "d/m/Y");
+    const readable = selected ? picker.formatDate(selected, altFormat) : "";
+    if (picker.altInput.value !== readable) picker.altInput.value = readable;
+  }
 }
 
 export function initDatePickers({
@@ -44,11 +54,13 @@ export function initDatePickers({
     disableMobile: true,
     allowInput: false,
     monthSelectorType: "dropdown",
-    position: "auto",
+    shorthandCurrentMonth: true,
+    position: "below left",
     static: false,
     onReady: (_, __, fp) => {
       fp.altInput?.classList.add("app-date-picker");
       fp.altInput?.setAttribute("aria-label", "Chọn ngày (ngày/tháng/năm)");
+      fp.altInput?.setAttribute("autocomplete", "off");
     },
   };
   const configs = {
@@ -69,21 +81,23 @@ export function initDatePickers({
     if (!element) continue;
     const currentValue = element.value;
     try {
-      // Flatpickr uses a text input internally. Convert only when the library
-      // is actually available so users retain native picker functionality on
-      // failed CDN connections.
+      // Preserve original native date value. Flatpickr handles type="date"
+      // natively and hides the original only *after* it has read the ISO date.
       const originalType = element.type;
-      element.type = "text";
       const picker = flatpickr(element, { ...common, ...settings, defaultDate: currentValue || undefined });
       if (!picker || typeof picker.setDate !== "function") {
         element.type = originalType;
         continue;
       }
       pickers[key] = picker;
+      synchronizeDate(picker, currentValue, "Y-m-d");
     } catch {
       // The original controls remain usable; never crash the entire planner
       // just because an optional date picker fails to initialize.
-      if (!element._flatpickr) element.type = "date";
+      if (!element._flatpickr) {
+        element.type = "date";
+        element.value = currentValue;
+      }
     }
   }
 
@@ -92,7 +106,6 @@ export function initDatePickers({
     const currentValue = element.value;
     try {
       const originalType = element.type;
-      element.type = "text";
       const picker = flatpickr(element, {
         locale,
         dateFormat: "Y-m",
@@ -100,14 +113,16 @@ export function initDatePickers({
         altFormat: "m/Y",
         disableMobile: true,
         allowInput: false,
-        position: "auto right",
+        position: "below right",
+        shorthandCurrentMonth: true,
         minDate: new Date(getToday().getFullYear(), getToday().getMonth(), 1),
         maxDate: new Date(2100, 11, 31),
         plugins: [new monthSelectPlugin({ shorthand: false, dateFormat: "Y-m", altFormat: "m/Y" })],
         defaultDate: currentValue || undefined,
         onReady: (_, __, fp) => {
-          fp.altInput?.classList.add("app-date-picker");
+          fp.altInput?.classList.add("app-date-picker", "app-month-picker");
           fp.altInput?.setAttribute("aria-label", "Chọn tháng và năm");
+          fp.altInput?.setAttribute("autocomplete", "off");
         },
         onChange: () => handlers.onMonth?.(),
       });
@@ -115,9 +130,13 @@ export function initDatePickers({
         element.type = originalType;
       } else {
         pickers.month = picker;
+        synchronizeDate(picker, currentValue, "Y-m");
       }
     } catch {
-      if (!element._flatpickr) element.type = "month";
+      if (!element._flatpickr) {
+        element.type = "month";
+        element.value = currentValue;
+      }
     }
   }
 
