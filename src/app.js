@@ -18,6 +18,7 @@ import {
   canVisitPreviousMonth, parseFutureCalendarMonth, calendarWeekCount,
 } from "./calendar-days.js";
 import { restorePlanningDates, initialCalendarMonth } from "./planner-state.js";
+import { initDatePickers } from "./date-pickers.js";
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -58,6 +59,7 @@ let activeHolidayAnchor = null;
 let referenceFollowsToday = true;
 let lastTodayISO = null;
 let holidayListExpanded = false;
+let datePickers = null;
 
 // Render into <body>, outside the calendar's overflow-hidden card, so tooltips
 // remain visible at the edges of the month and are not cut off.
@@ -530,6 +532,10 @@ function renderCalendar(data, requestDate, startDate, endDate) {
   calendarPrev.setAttribute("aria-disabled", String(calendarPrev.disabled));
   calendarMonthJump.min = toISODate(startOfMonth(today)).slice(0, 7);
   calendarMonthJump.value = toISODate(month).slice(0, 7);
+  datePickers?.sync({
+    month: calendarMonthJump.value,
+    minMonth: today,
+  });
   calendarTitle.textContent = formatMonth(month);
   const leaveLabel = startDate
     ? actualEnd && !sameDate(startDate, actualEnd)
@@ -683,6 +689,13 @@ function calculate() {
   // rejected too, rather than being treated as valid attendance requests.
   startInput.min = toISODate(today);
   endInput.min = toISODate(start && start > today ? start : today);
+  datePickers?.sync({
+    request: requestInput.value,
+    start: startInput.value,
+    end: endInput.value,
+    minStart: startInput.min,
+    minEnd: endInput.min,
+  });
   if (start && start < today) {
     renderTop(pointsInput.value, request || today);
     renderError("Ngày đã qua không thể đăng ký. Vui lòng chọn hôm nay hoặc ngày trong tương lai.");
@@ -984,4 +997,27 @@ $("#reset-btn").addEventListener("click", () => {
 });
 
 setInitialState();
+// Upgrade native pickers only if the pinned Flatpickr bundle loaded. Both the
+// main calendar and attendance calculations continue working without CDN access.
+calendarMonthJump.value = toISODate(calendarViewDate).slice(0, 7);
+datePickers = initDatePickers({
+  flatpickr: window.flatpickr,
+  monthSelectPlugin: window.monthSelectPlugin,
+  fields: {
+    request: requestInput,
+    start: startInput,
+    end: endInput,
+    month: calendarMonthJump,
+  },
+  getToday: localToday,
+  handlers: {
+    onRequest: () => {
+      referenceFollowsToday = requestInput.value === toISODate(localToday());
+      calculate();
+    },
+    onStart: () => startInput.dispatchEvent(new Event("change", { bubbles: true })),
+    onEnd: calculate,
+    onMonth: () => calendarMonthJump.dispatchEvent(new Event("change", { bubbles: true })),
+  },
+});
 calculate();
