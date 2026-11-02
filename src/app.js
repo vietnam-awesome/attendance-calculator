@@ -843,6 +843,12 @@ calendarThisMonth?.addEventListener("click", () => {
   if (calendarMoreMenu) calendarMoreMenu.open = false;
 });
 
+document.addEventListener("pointerdown", (event) => {
+  if (calendarMoreMenu?.open && !calendarMoreMenu.contains(event.target)) {
+    calendarMoreMenu.open = false;
+  }
+});
+
 calendarMonthJump?.addEventListener("change", () => {
   const month = parseFutureCalendarMonth(calendarMonthJump.value, localToday());
   if (month) {
