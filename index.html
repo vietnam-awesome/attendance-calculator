@@ -36,6 +36,24 @@
       overflow: visible !important;
     }
     .flatpickr-calendar::before, .flatpickr-calendar::after { display: none !important; }
+    /* Flatpickr's default 300ms translucent fade causes text underneath the
+       picker to remain visible while opening. Show an opaque, steady popover. */
+    .flatpickr-calendar.open,
+    .flatpickr-calendar.animate.open {
+      opacity: 1 !important;
+      visibility: visible !important;
+      background-color: #ffffff !important;
+      animation: none !important;
+      transition: none !important;
+      transform: none !important;
+    }
+    .flatpickr-calendar .flatpickr-innerContainer,
+    .flatpickr-calendar .flatpickr-days,
+    .flatpickr-calendar .flatpickr-months,
+    .flatpickr-calendar .flatpickr-weekdays {
+      background-color: #ffffff !important;
+      opacity: 1 !important;
+    }
     .flatpickr-day { border-radius: 8px; }
     .flatpickr-day.selected, .flatpickr-day.selected:hover,
     .flatpickr-monthSelect-month.selected {
