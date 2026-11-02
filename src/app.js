@@ -14,6 +14,7 @@ import {
   isVerifiedLunarHolidayYear,
 } from "./vietnam-holidays.js";
 import { isWeekend, isLeaveCandidateDay } from "./calendar-days.js";
+import { restorePlanningDates, initialCalendarMonth } from "./planner-state.js";
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -46,6 +47,8 @@ const STORAGE_KEY = "attendance-calculator-v4";
 const DAY_MS = 86_400_000;
 let calendarViewDate = null;
 let activeHolidayAnchor = null;
+let referenceFollowsToday = true;
+let lastTodayISO = null;
 
 // Render into <body>, outside the calendar's overflow-hidden card, so tooltips
 // remain visible at the edges of the month and are not cut off.
@@ -214,37 +217,48 @@ function earliestSafeDate(request, options = {}) {
   return null;
 }
 
-function defaultSafeDate(today = localToday()) {
+function defaultSafeDate(today = localToday(), options = {}) {
   return (
     earliestSafeDate(today, {
-      typeValue: "leave",
-      duration: 1,
+      typeValue: options.typeValue || "leave",
+      duration: options.duration || 1,
       currentPoints: 96,
       noContact: false,
     }) || addDays(today, 7)
   );
 }
 
-function loadState() {
-  const today = localToday();
-  const safe = defaultSafeDate(today);
+function loadState(today = localToday()) {
   const fallback = {
     currentPoints: 96,
     type: "leave",
-    requestDate: toISODate(today),
-    startDate: toISODate(safe),
-    endDate: toISODate(safe),
     noContact: false,
   };
-
+  let saved;
   try {
-    return {
-      ...fallback,
-      ...(JSON.parse(localStorage.getItem(STORAGE_KEY) || "null") || {}),
-    };
+    saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
   } catch {
-    return fallback;
+    saved = null;
   }
+  const state = {
+    ...fallback,
+    ...(saved && typeof saved === "object" && !Array.isArray(saved) ? saved : {}),
+  };
+  const savedStart = parseISODate(state.startDate);
+  const savedEnd = parseISODate(state.endDate);
+  const multi = state.type === "leave-multi";
+  const duration = multi && savedStart && savedEnd && savedEnd >= savedStart
+    ? Math.min(400, daysBetween(savedEnd, savedStart) + 1)
+    : 1;
+  const safe = defaultSafeDate(today, { typeValue: state.type, duration });
+  const dates = restorePlanningDates({
+    today,
+    savedStart: state.startDate,
+    savedEnd: state.endDate,
+    fallbackStart: safe,
+    multi,
+  });
+  return { ...state, ...dates };
 }
 
 function saveState() {
@@ -253,7 +267,6 @@ function saveState() {
     JSON.stringify({
       currentPoints: Number(pointsInput.value),
       type: typeInput.value,
-      requestDate: requestInput.value,
       startDate: startInput.value,
       endDate: endInput.value,
       noContact: noContactInput.checked,
@@ -262,16 +275,18 @@ function saveState() {
 }
 
 function setInitialState() {
-  const state = loadState();
+  const today = localToday();
+  const state = loadState(today);
   pointsInput.value = state.currentPoints;
   typeInput.value = state.type;
   requestInput.value = state.requestDate;
   startInput.value = state.startDate;
   endInput.value = state.endDate;
   noContactInput.checked = state.noContact;
-  calendarViewDate = startOfMonth(
-    parseISODate(state.startDate) || localToday(),
-  );
+  // Open on the real current month even when a future leave date is stored.
+  calendarViewDate = initialCalendarMonth(today);
+  lastTodayISO = toISODate(today);
+  referenceFollowsToday = true;
   toggleEndDate();
 }
 
@@ -740,9 +755,51 @@ quickDateButtons.addEventListener("click", (event) => {
 });
 
 referenceTodayButton.addEventListener("click", () => {
-  requestInput.value = toISODate(localToday());
+  const today = localToday();
+  requestInput.value = toISODate(today);
+  referenceFollowsToday = true;
+  lastTodayISO = toISODate(today);
+  calendarViewDate = initialCalendarMonth(today);
   calculate();
 });
+
+requestInput.addEventListener("input", () => {
+  referenceFollowsToday = requestInput.value === toISODate(localToday());
+});
+
+// Keep automatic dates fresh when a tab stays open over midnight or a month
+// boundary; users who edited the reference date during this visit are not
+// unexpectedly overridden until the next full page load.
+function refreshTodayOnReturn() {
+  const today = localToday();
+  const todayISO = toISODate(today);
+  if (todayISO === lastTodayISO) return;
+  lastTodayISO = todayISO;
+  if (!referenceFollowsToday) return;
+
+  const savedStart = parseISODate(startInput.value);
+  const savedEnd = parseISODate(endInput.value);
+  const duration = typeInput.value === "leave-multi" && savedStart && savedEnd && savedEnd >= savedStart
+    ? Math.min(400, daysBetween(savedEnd, savedStart) + 1)
+    : 1;
+  const dates = restorePlanningDates({
+    today,
+    savedStart: startInput.value,
+    savedEnd: endInput.value,
+    fallbackStart: defaultSafeDate(today, { typeValue: typeInput.value, duration }),
+    multi: typeInput.value === "leave-multi",
+  });
+  requestInput.value = dates.requestDate;
+  startInput.value = dates.startDate;
+  endInput.value = dates.endDate;
+  calendarViewDate = initialCalendarMonth(today);
+  calculate();
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden) refreshTodayOnReturn();
+});
+window.addEventListener("pageshow", refreshTodayOnReturn);
 
 result.addEventListener("click", (event) => {
   const button = event.target.closest("button[data-use-safe-date]");
@@ -850,7 +907,9 @@ $("#reset-btn").addEventListener("click", () => {
   startInput.value = toISODate(safe);
   endInput.value = startInput.value;
   noContactInput.checked = false;
-  calendarViewDate = startOfMonth(safe);
+  calendarViewDate = initialCalendarMonth(today);
+  referenceFollowsToday = true;
+  lastTodayISO = toISODate(today);
   toggleEndDate();
   calculate();
 });
