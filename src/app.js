@@ -44,6 +44,83 @@ const holidayNote = $("#holiday-note");
 const STORAGE_KEY = "attendance-calculator-v4";
 const DAY_MS = 86_400_000;
 let calendarViewDate = null;
+let activeHolidayAnchor = null;
+
+// Render into <body>, outside the calendar's overflow-hidden card, so tooltips
+// remain visible at the edges of the month and are not cut off.
+const holidayPopover = document.createElement("div");
+holidayPopover.id = "calendar-holiday-tooltip";
+holidayPopover.className = "holiday-popover";
+holidayPopover.setAttribute("role", "tooltip");
+holidayPopover.hidden = true;
+document.body.append(holidayPopover);
+
+function hideHolidayPopover() {
+  holidayPopover.hidden = true;
+  activeHolidayAnchor = null;
+}
+
+function appendPopoverText(parent, className, value) {
+  const element = document.createElement("div");
+  element.className = className;
+  element.textContent = value;
+  parent.append(element);
+}
+
+function showHolidayPopover(anchor) {
+  if (!anchor || !anchor.isConnected) return;
+  const day = parseISODate(anchor.dataset.holidayDate);
+  if (!day) return;
+  const holidays = getHolidaysOnDate(day);
+  if (!holidays.length) return;
+  if (activeHolidayAnchor === anchor && !holidayPopover.hidden) return;
+
+  activeHolidayAnchor = anchor;
+  holidayPopover.replaceChildren();
+  for (const item of holidays) {
+    const isReference = item.kind === "reference";
+    const start = parseISODate(item.start);
+    const end = parseISODate(item.end);
+    appendPopoverText(
+      holidayPopover,
+      isReference ? "holiday-popover__eyebrow holiday-popover__eyebrow--reference" : "holiday-popover__eyebrow",
+      isReference ? "Lịch nghỉ tham khảo" : "Ngày lễ chính thức",
+    );
+    appendPopoverText(holidayPopover, "holiday-popover__title", item.name);
+    appendPopoverText(
+      holidayPopover, "holiday-popover__date",
+      start && end && item.start !== item.end
+        ? \`\${formatDateVN(start)} – \${formatDateVN(end)}\`
+        : formatDateVN(start),
+    );
+    appendPopoverText(
+      holidayPopover, "holiday-popover__note",
+      item.note ||
+      (isReference
+        ? "Lịch tham khảo của khối nhà nước, có thể khác tại doanh nghiệp."
+        : "Ngày nghỉ lễ theo quy định. Lịch nghỉ bù thực tế có thể khác theo nơi làm việc."),
+    );
+  }
+
+  holidayPopover.hidden = false;
+  const rect = anchor.getBoundingClientRect();
+  const tipWidth = holidayPopover.offsetWidth;
+  const tipHeight = holidayPopover.offsetHeight;
+  const edge = 10;
+  const left = Math.min(
+    Math.max(rect.left + rect.width / 2 - tipWidth / 2, edge),
+    Math.max(edge, window.innerWidth - tipWidth - edge),
+  );
+  const above = rect.top - tipHeight - 10;
+  const below = rect.bottom + 10;
+  const top = above >= edge
+    ? above
+    : below + tipHeight <= window.innerHeight - edge
+      ? below
+      : Math.max(edge, Math.min(above, window.innerHeight - tipHeight - edge));
+  holidayPopover.style.left = \`\${left}px\`;
+  holidayPopover.style.top = \`\${top}px\`;
+}
 
 function localToday() {
   const now = new Date();
@@ -406,6 +483,7 @@ function chip(label, value, tone) {
 
 function renderCalendar(data, requestDate, startDate, endDate) {
   if (!calendarGrid) return;
+  hideHolidayPopover();
 
   const focus = startDate || requestDate || localToday();
   if (!calendarViewDate) calendarViewDate = startOfMonth(focus);
@@ -447,7 +525,7 @@ function renderCalendar(data, requestDate, startDate, endDate) {
     const evaluation =
       current && !beforeReference ? evaluateCandidate(date, requestDate) : null;
     const deduction = evaluation?.deduction;
-    const holiday = getHolidaysOnDate(date)[0];
+    const holiday = current ? getHolidaysOnDate(date)[0] : null;
     const isPublicHoliday = Boolean(holiday);
     const isReferenceHoliday = holiday?.kind === "reference";
 
@@ -455,15 +533,15 @@ function renderCalendar(data, requestDate, startDate, endDate) {
     let label = "";
     let selectable = false;
 
-    if (beforeReference) {
+    if (current && isPublicHoliday) {
+      status = isReferenceHoliday
+        ? "calendar-holiday calendar-holiday--reference"
+        : "calendar-holiday calendar-holiday--official";
+      label = isReferenceHoliday ? "LỊCH NGHỈ" : "NGÀY LỄ";
+      selectable = !beforeReference;
+    } else if (beforeReference) {
       status = "border-slate-100 bg-slate-50/80 text-slate-300 opacity-60";
       label = "Đã qua";
-    } else if (current && isPublicHoliday) {
-      status = isReferenceHoliday
-        ? "border-sky-200 bg-sky-50/90 hover:bg-sky-100"
-        : "border-teal-200 bg-teal-50/90 hover:bg-teal-100";
-      label = isReferenceHoliday ? "Tham khảo" : "Ngày lễ";
-      selectable = true;
     } else if (current && deduction === 0) {
       status = "border-emerald-100 bg-emerald-50/90 hover:bg-emerald-100";
       label = "An toàn";
@@ -484,7 +562,7 @@ function renderCalendar(data, requestDate, startDate, endDate) {
     const classes = [
       "relative min-h-[58px] rounded-xl border p-1.5 text-left transition sm:min-h-[72px] sm:p-2",
       status,
-      selectable ? "cursor-pointer" : "cursor-default",
+      selectable || isPublicHoliday ? "cursor-pointer" : "cursor-default",
     ];
 
     if (inRange(date, startDate, actualEnd)) {
@@ -502,10 +580,10 @@ function renderCalendar(data, requestDate, startDate, endDate) {
       );
     }
 
-    const labelClass = beforeReference
+    const labelClass = beforeReference && !isPublicHoliday
       ? "text-slate-300"
       : isPublicHoliday
-        ? isReferenceHoliday ? "text-sky-700" : "text-teal-700"
+        ? isReferenceHoliday ? "text-sky-700" : "text-rose-700"
         : deduction === 0
         ? "text-emerald-700"
         : deduction === 1
@@ -513,22 +591,34 @@ function renderCalendar(data, requestDate, startDate, endDate) {
           : "text-rose-700";
 
     const dataAttribute = selectable
-      ? `data-calendar-date="${toISODate(date)}"`
-      : "disabled";
+      ? \`data-calendar-date="\${toISODate(date)}"\`
+      : isPublicHoliday ? 'aria-disabled="true"' : "disabled";
+    const holidayAttribute = isPublicHoliday
+      ? \`data-holiday-date="\${toISODate(date)}" aria-describedby="calendar-holiday-tooltip" aria-label="\${formatDateVN(date)}, \${holiday.name}. \${isReferenceHoliday ? "Lịch tham khảo" : "Ngày lễ chính thức"}"\`
+      : \`title="\${formatDateVN(date)}\${label ? \` · \${label}\` : ""}"\`;
+    const holidayIcon = isReferenceHoliday
+      ? '<svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M8 15h8"/></svg>'
+      : '<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 2.9 6.5 7.1.8-5.3 4.8 1.5 7-6.2-3.6-6.2 3.6 1.5-7L2 9.3l7.1-.8z"/></svg>';
 
-    cells.push(`
-      <button type="button" ${dataAttribute} class="${classes.join(" ")}" title="${formatDateVN(date)}${holiday ? ` · ${holiday.name}` : label ? ` · ${label}` : ""}">
-        <div class="flex items-start justify-between">
-          <span class="flex size-6 items-center justify-center rounded-lg text-[11px] font-bold ${sameDate(date, today) ? "bg-slate-900 text-white" : current ? beforeReference ? "text-slate-300" : "text-slate-800" : "text-slate-300"}">${date.getDate()}</span>
-          <span class="flex gap-1">
-            ${sameDate(date, requestDate) ? '<i class="size-1.5 rounded-full bg-blue-500"></i>' : ""}
-            ${sameDate(date, deadline) ? '<i class="size-1.5 rounded-full bg-amber-500"></i>' : ""}
-            ${inRange(date, startDate, actualEnd) ? '<i class="size-1.5 rounded-full bg-violet-500"></i>' : ""}
+    cells.push(\`
+      <button type="button" \${dataAttribute} \${holidayAttribute} class="\${classes.join(" ")}">
+        <div class="flex items-start justify-between gap-1">
+          <span class="flex size-6 items-center justify-center rounded-lg text-[11px] font-bold \${isPublicHoliday ? "calendar-holiday__date" : sameDate(date, today) ? "bg-slate-900 text-white" : current ? beforeReference ? "text-slate-300" : "text-slate-800" : "text-slate-300"}">\${date.getDate()}</span>
+          <span class="flex items-center gap-1">
+            \${isPublicHoliday ? \`<span class="calendar-holiday__icon">\${holidayIcon}</span>\` : ""}
+            \${sameDate(date, requestDate) ? '<i class="size-1.5 rounded-full bg-blue-500"></i>' : ""}
+            \${sameDate(date, deadline) ? '<i class="size-1.5 rounded-full bg-amber-500"></i>' : ""}
+            \${inRange(date, startDate, actualEnd) ? '<i class="size-1.5 rounded-full bg-violet-500"></i>' : ""}
           </span>
         </div>
-        ${label ? `<div class="mt-2 hidden text-[8px] font-extrabold uppercase tracking-wide ${labelClass} sm:block">${label}</div>` : ""}
+        \${isPublicHoliday
+          ? \`<div class="mt-1 sm:mt-1.5">
+              <span class="calendar-holiday__tag">\${label}</span>
+              <span class="calendar-holiday__name">\${holiday.name}</span>
+            </div>\`
+          : label ? \`<div class="mt-2 hidden text-[8px] font-extrabold uppercase tracking-wide \${labelClass} sm:block">\${label}</div>\` : ""}
       </button>
-    `);
+    \`);
   }
 
   calendarGrid.innerHTML = cells.join("");
@@ -619,12 +709,56 @@ holidayList?.addEventListener("click", (event) => {
   calculate();
 });
 
-calendarGrid?.addEventListener("click", (event) => {
-  const button = event.target.closest("button[data-calendar-date]");
-  if (button && !button.disabled) {
-    selectStartDate(parseISODate(button.dataset.calendarDate));
+calendarGrid?.addEventListener("pointerover", (event) => {
+  if (event.pointerType === "touch") return;
+  const button = event.target.closest("button[data-holiday-date]");
+  if (button) showHolidayPopover(button);
+});
+
+calendarGrid?.addEventListener("pointerout", (event) => {
+  const button = event.target.closest("button[data-holiday-date]");
+  if (button && (!event.relatedTarget || !button.contains(event.relatedTarget))) {
+    hideHolidayPopover();
   }
 });
+
+calendarGrid?.addEventListener("focusin", (event) => {
+  const button = event.target.closest("button[data-holiday-date]");
+  if (button) showHolidayPopover(button);
+});
+
+calendarGrid?.addEventListener("focusout", (event) => {
+  if (!event.relatedTarget || !calendarGrid.contains(event.relatedTarget)) {
+    hideHolidayPopover();
+  }
+});
+
+calendarGrid?.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-calendar-date], button[data-holiday-date]");
+  if (!button) return;
+  const day = button.dataset.holidayDate;
+  const selectedDay = button.dataset.calendarDate;
+  const touchOrKeyboard = window.matchMedia("(hover: none)").matches || event.detail === 0;
+  if (selectedDay) {
+    selectStartDate(parseISODate(selectedDay));
+  }
+  // A tap reveals the same rich tooltip; keyboard focus also reveals it.
+  if (day && touchOrKeyboard) {
+    const newButton = calendarGrid.querySelector(\`[data-holiday-date="\${day}"]\`);
+    showHolidayPopover(newButton);
+  }
+});
+
+document.addEventListener("pointerdown", (event) => {
+  if (activeHolidayAnchor && !calendarGrid.contains(event.target)) {
+    hideHolidayPopover();
+  }
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") hideHolidayPopover();
+});
+window.addEventListener("resize", hideHolidayPopover);
+window.addEventListener("scroll", hideHolidayPopover, true);
 
 calendarPrev?.addEventListener("click", () => {
   calendarViewDate = addMonths(
