@@ -162,3 +162,36 @@ test("calendar styling requests compact month headings and below-positioned popu
   assert.equal(called[0].options.shorthandCurrentMonth, true);
   assert.equal(called[3].options.position, "below right");
 });
+
+test("month-only sync does not clear request, start or end dates", () => {
+  const { flatpickr, called } = mockFlatpickr();
+  const controls = fields();
+  const picker = initDatePickers({
+    flatpickr,
+    monthSelectPlugin: function monthSelectPlugin() { return {}; },
+    fields: controls,
+    handlers: {},
+    getToday: today,
+  });
+  const earlierValues = [controls.request.value, controls.start.value, controls.end.value];
+  picker.sync({ month: "2027-01", minMonth: today() });
+  assert.deepEqual(
+    [controls.request.value, controls.start.value, controls.end.value],
+    earlierValues,
+  );
+  assert.equal(called[0].picker.altInput.value, "02/11/2026");
+  assert.equal(called[1].picker.altInput.value, "09/11/2026");
+  assert.equal(controls.month.value, "2027-01");
+});
+
+test("date-only sync does not change calendar month", () => {
+  const { flatpickr } = mockFlatpickr();
+  const controls = fields();
+  const picker = initDatePickers({
+    flatpickr,
+    monthSelectPlugin: function monthSelectPlugin() { return {}; },
+    fields: controls, handlers: {}, getToday: today,
+  });
+  picker.sync({ start: "2026-11-11" });
+  assert.equal(controls.month.value, "2026-11");
+});
