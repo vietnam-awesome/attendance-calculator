@@ -217,7 +217,7 @@
     <section class="relative z-10 -mt-4 rounded-2xl border border-slate-200/80 bg-white p-3 shadow-[0_14px_40px_rgba(15,23,42,.07)] sm:p-3.5">
       <form id="calculator-form" class="grid items-end gap-3 sm:grid-cols-2 xl:grid-cols-[1.05fr_.7fr_1.15fr_1fr_auto]">
         <label class="block min-w-0">
-          <span class="mb-1.5 flex min-h-[18px] items-center justify-between text-[10px] font-bold uppercase tracking-[.12em] text-slate-400"><span>Mốc tính</span><button type="button" id="reference-today-btn" class="normal-case tracking-normal text-blue-600 hover:text-blue-700">Hôm nay</button></span>
+          <span class="mb-1.5 flex min-h-[18px] items-center justify-between text-[10px] font-bold uppercase tracking-[.12em] text-slate-400"><span title="Tự lấy ngày hiện tại khi mở trang hoặc quay lại tab">Mốc tính · tự động</span><button type="button" id="reference-today-btn" class="normal-case tracking-normal text-blue-600 hover:text-blue-700">Hôm nay</button></span>
           <input id="request-date" type="date" required class="h-10 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-semibold text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-500/10" />
         </label>
 
@@ -255,7 +255,7 @@
       <div class="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
         <div class="border-b border-slate-100 px-4 py-3.5 sm:px-5">
           <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div><p class="text-[10px] font-bold uppercase tracking-[.14em] text-violet-600">Calendar overview</p><h2 class="mt-1 text-lg font-bold tracking-tight text-slate-950">Chọn ngày nghỉ trên lịch</h2><p class="mt-0.5 text-xs leading-5 text-slate-400">Ngày trước mốc tính được làm mờ; màu nền phân biệt ngày làm việc, cuối tuần và ngày lễ.</p></div>
+            <div><p class="text-[10px] font-bold uppercase tracking-[.14em] text-violet-600">Calendar overview</p><h2 class="mt-1 text-lg font-bold tracking-tight text-slate-950">Chọn ngày nghỉ trên lịch</h2><p class="mt-0.5 text-xs leading-5 text-slate-400">Tự mở tháng hiện tại; ngày trước mốc tính được làm mờ và ngày nghỉ có màu riêng.</p></div>
             <div class="flex items-center gap-1.5 self-start sm:self-auto">
               <button type="button" id="calendar-prev" aria-label="Tháng trước" class="flex size-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-900"><svg viewBox="0 0 20 20" fill="none" class="size-3.5"><path d="m12.5 15-5-5 5-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
               <div id="calendar-title" class="min-w-32 text-center text-xs font-bold capitalize text-slate-800">—</div>
