@@ -31,7 +31,7 @@ function mockFlatpickr() {
             ? new Date(parts[0], parts[1] - 1, parts[2] || 1)
             : null;
         this.selectedDates = parsed ? [parsed] : [];
-        field.value = parsed ? this.formatDate(parsed, format || "Y-m-d") : "";
+        field.value = parsed ? this.formatDate(parsed, format || this.config.dateFormat || "Y-m-d") : "";
         this.lastTrigger = trigger;
         this.lastFormat = format;
       },
