@@ -543,7 +543,7 @@ function renderCalendar(data, requestDate, startDate, endDate) {
       : formatDateVN(startDate)
     : "—";
   calendarMeta.innerHTML = `
-    <span>Ngày dự kiến <strong class="font-semibold text-violet-700">${leaveLabel}</strong></span>
+    <span>Ngày dự kiến <strong class="font-semibold text-indigo-700">${leaveLabel}</strong></span>
     <span class="hidden text-slate-300 sm:inline" aria-hidden="true">•</span>
     <span>Hạn đăng ký <strong class="font-semibold text-slate-700">${deadline ? formatDateVN(deadline) : "—"}</strong></span>
   `;
@@ -590,15 +590,15 @@ function renderCalendar(data, requestDate, startDate, endDate) {
         : "calendar-weekend calendar-weekend--sunday";
       label = "NGÀY NGHỈ";
     } else if (deduction === 0) {
-      status = "border-emerald-100 bg-emerald-50/90 hover:bg-emerald-100";
+      status = "calendar-day--safe hover:border-emerald-300";
       label = "An toàn";
       selectable = cell.selectable;
     } else if (deduction === 1) {
-      status = "border-amber-100 bg-amber-50/90 hover:bg-amber-100";
+      status = "calendar-day--warning hover:border-amber-300";
       label = "-1";
       selectable = cell.selectable;
     } else if (deduction >= 2) {
-      status = "border-rose-100 bg-rose-50/90 hover:bg-rose-100";
+      status = "calendar-day--danger hover:border-rose-300";
       label = "-2";
       selectable = cell.selectable;
     } else {
@@ -613,19 +613,10 @@ function renderCalendar(data, requestDate, startDate, endDate) {
     ];
 
     if (active && inRange(date, startDate, actualEnd)) {
-      classes.push("outline outline-2 outline-offset-[-2px] outline-violet-500");
+      classes.push("outline outline-2 outline-offset-[-2px] outline-indigo-500");
     }
-    if (active && sameDate(date, requestDate)) {
-      classes.push("ring-2 ring-inset ring-blue-500");
-    }
-    if (active && sameDate(date, deadline)) {
-      classes.push("shadow-[inset_0_0_0_2px_rgba(245,158,11,.8)]");
-    }
-    if (active && sameDate(date, today)) {
-      classes.push(
-        "after:pointer-events-none after:absolute after:inset-1 after:rounded-lg after:border after:border-dashed after:border-slate-500/60",
-      );
-    }
+    // Keep one strong selection outline only. Other date signals use tiny dots,
+    // not overlapping rings, shadows and dashed borders on the same cell.
 
     const labelClass = past || !current
       ? "text-slate-300"
@@ -654,9 +645,8 @@ function renderCalendar(data, requestDate, startDate, endDate) {
           <span class="flex size-6 items-center justify-center rounded-lg text-[11px] font-bold ${isPublicHoliday ? "calendar-holiday__date" : active && sameDate(date, today) ? "bg-slate-900 text-white" : active ? "text-slate-800" : "text-slate-300"}">${date.getDate()}</span>
           <span class="flex items-center gap-1">
             ${isPublicHoliday ? `<span class="calendar-holiday__icon">${holidayIcon}</span>` : weekend ? '<span class="calendar-weekend__icon" aria-hidden="true">☾</span>' : ""}
-            ${active && sameDate(date, requestDate) ? '<i class="size-1.5 rounded-full bg-blue-500"></i>' : ""}
-            ${active && sameDate(date, deadline) ? '<i class="size-1.5 rounded-full bg-amber-500"></i>' : ""}
-            ${active && inRange(date, startDate, actualEnd) ? '<i class="size-1.5 rounded-full bg-violet-500"></i>' : ""}
+            ${active && sameDate(date, requestDate) && !sameDate(date, today) ? '<i class="size-1.5 rounded-full bg-blue-500"></i>' : ""}
+            ${active && sameDate(date, deadline) && !sameDate(date, requestDate) ? '<i class="size-1.5 rounded-full bg-amber-500"></i>' : ""}
           </span>
         </div>
         ${isPublicHoliday
