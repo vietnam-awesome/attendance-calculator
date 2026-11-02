@@ -94,10 +94,10 @@ export function initDatePickers({
     const element = fields[key];
     if (!element) continue;
     const currentValue = element.value;
+    const originalType = element.type;
     try {
       // Preserve original native date value. Flatpickr handles type="date"
       // natively and hides the original only *after* it has read the ISO date.
-      const originalType = element.type;
       const picker = flatpickr(element, {
         ...common, ...settings,
         defaultDate: parseLocalISO(currentValue) || undefined,
@@ -112,20 +112,20 @@ export function initDatePickers({
         throw new Error("Flatpickr date initialization did not preserve the selected date");
       }
     } catch {
-      // The original controls remain usable; never crash the entire planner
-      // just because an optional date picker fails to initialize.
-      if (!element._flatpickr) {
-        element.type = "date";
-        element.value = currentValue;
-      }
+      // Restore the exact pre-library control if the plugin initialized
+      // partially or discarded a valid initial value.
+      try { element._flatpickr?.destroy?.(); } catch { /* best-effort */ }
+      delete pickers[key];
+      element.type = originalType;
+      element.value = currentValue;
     }
   }
 
   if (fields.month && typeof monthSelectPlugin === "function") {
     const element = fields.month;
     const currentValue = element.value;
+    const originalType = element.type;
     try {
-      const originalType = element.type;
       const picker = flatpickr(element, {
         locale,
         dateFormat: "Y-m",
@@ -156,10 +156,10 @@ export function initDatePickers({
         }
       }
     } catch {
-      if (!element._flatpickr) {
-        element.type = "month";
-        element.value = currentValue;
-      }
+      try { element._flatpickr?.destroy?.(); } catch { /* best-effort */ }
+      delete pickers.month;
+      element.type = originalType;
+      element.value = currentValue;
     }
   }
 
