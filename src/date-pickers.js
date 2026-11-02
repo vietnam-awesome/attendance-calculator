@@ -123,10 +123,10 @@ export function initDatePickers({
 
   return {
     sync({ request, start, end, month, minStart, minEnd, minMonth } = {}) {
-      if (pickers.start && minStart && pickers.start.config.minDate?.toString() !== minStart) {
+      if (pickers.start && minStart && iso(pickers.start.config.minDate) !== minStart) {
         pickers.start.set("minDate", minStart);
       }
-      if (pickers.end && minEnd && pickers.end.config.minDate?.toString() !== minEnd) {
+      if (pickers.end && minEnd && iso(pickers.end.config.minDate) !== minEnd) {
         pickers.end.set("minDate", minEnd);
       }
       if (pickers.month && minMonth) {
