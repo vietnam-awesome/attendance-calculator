@@ -90,7 +90,7 @@ function showHolidayPopover(anchor) {
     appendPopoverText(
       holidayPopover, "holiday-popover__date",
       start && end && item.start !== item.end
-        ? \`\${formatDateVN(start)} – \${formatDateVN(end)}\`
+        ? `${formatDateVN(start)} – ${formatDateVN(end)}`
         : formatDateVN(start),
     );
     appendPopoverText(
@@ -118,8 +118,8 @@ function showHolidayPopover(anchor) {
     : below + tipHeight <= window.innerHeight - edge
       ? below
       : Math.max(edge, Math.min(above, window.innerHeight - tipHeight - edge));
-  holidayPopover.style.left = \`\${left}px\`;
-  holidayPopover.style.top = \`\${top}px\`;
+  holidayPopover.style.left = `${left}px`;
+  holidayPopover.style.top = `${top}px`;
 }
 
 function localToday() {
@@ -591,34 +591,34 @@ function renderCalendar(data, requestDate, startDate, endDate) {
           : "text-rose-700";
 
     const dataAttribute = selectable
-      ? \`data-calendar-date="\${toISODate(date)}"\`
+      ? `data-calendar-date="${toISODate(date)}"`
       : isPublicHoliday ? 'aria-disabled="true"' : "disabled";
     const holidayAttribute = isPublicHoliday
-      ? \`data-holiday-date="\${toISODate(date)}" aria-describedby="calendar-holiday-tooltip" aria-label="\${formatDateVN(date)}, \${holiday.name}. \${isReferenceHoliday ? "Lịch tham khảo" : "Ngày lễ chính thức"}"\`
-      : \`title="\${formatDateVN(date)}\${label ? \` · \${label}\` : ""}"\`;
+      ? `data-holiday-date="${toISODate(date)}" aria-describedby="calendar-holiday-tooltip" aria-label="${formatDateVN(date)}, ${holiday.name}. ${isReferenceHoliday ? "Lịch tham khảo" : "Ngày lễ chính thức"}"`
+      : `title="${formatDateVN(date)}${label ? ` · ${label}` : ""}"`;
     const holidayIcon = isReferenceHoliday
       ? '<svg aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18M8 15h8"/></svg>'
       : '<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 2.9 6.5 7.1.8-5.3 4.8 1.5 7-6.2-3.6-6.2 3.6 1.5-7L2 9.3l7.1-.8z"/></svg>';
 
-    cells.push(\`
-      <button type="button" \${dataAttribute} \${holidayAttribute} class="\${classes.join(" ")}">
+    cells.push(`
+      <button type="button" ${dataAttribute} ${holidayAttribute} class="${classes.join(" ")}">
         <div class="flex items-start justify-between gap-1">
-          <span class="flex size-6 items-center justify-center rounded-lg text-[11px] font-bold \${isPublicHoliday ? "calendar-holiday__date" : sameDate(date, today) ? "bg-slate-900 text-white" : current ? beforeReference ? "text-slate-300" : "text-slate-800" : "text-slate-300"}">\${date.getDate()}</span>
+          <span class="flex size-6 items-center justify-center rounded-lg text-[11px] font-bold ${isPublicHoliday ? "calendar-holiday__date" : sameDate(date, today) ? "bg-slate-900 text-white" : current ? beforeReference ? "text-slate-300" : "text-slate-800" : "text-slate-300"}">${date.getDate()}</span>
           <span class="flex items-center gap-1">
-            \${isPublicHoliday ? \`<span class="calendar-holiday__icon">\${holidayIcon}</span>\` : ""}
-            \${sameDate(date, requestDate) ? '<i class="size-1.5 rounded-full bg-blue-500"></i>' : ""}
-            \${sameDate(date, deadline) ? '<i class="size-1.5 rounded-full bg-amber-500"></i>' : ""}
-            \${inRange(date, startDate, actualEnd) ? '<i class="size-1.5 rounded-full bg-violet-500"></i>' : ""}
+            ${isPublicHoliday ? `<span class="calendar-holiday__icon">${holidayIcon}</span>` : ""}
+            ${sameDate(date, requestDate) ? '<i class="size-1.5 rounded-full bg-blue-500"></i>' : ""}
+            ${sameDate(date, deadline) ? '<i class="size-1.5 rounded-full bg-amber-500"></i>' : ""}
+            ${inRange(date, startDate, actualEnd) ? '<i class="size-1.5 rounded-full bg-violet-500"></i>' : ""}
           </span>
         </div>
-        \${isPublicHoliday
-          ? \`<div class="mt-1 sm:mt-1.5">
-              <span class="calendar-holiday__tag">\${label}</span>
-              <span class="calendar-holiday__name">\${holiday.name}</span>
-            </div>\`
-          : label ? \`<div class="mt-2 hidden text-[8px] font-extrabold uppercase tracking-wide \${labelClass} sm:block">\${label}</div>\` : ""}
+        ${isPublicHoliday
+          ? `<div class="mt-1 sm:mt-1.5">
+              <span class="calendar-holiday__tag">${label}</span>
+              <span class="calendar-holiday__name">${holiday.name}</span>
+            </div>`
+          : label ? `<div class="mt-2 hidden text-[8px] font-extrabold uppercase tracking-wide ${labelClass} sm:block">${label}</div>` : ""}
       </button>
-    \`);
+    `);
   }
 
   calendarGrid.innerHTML = cells.join("");
@@ -744,7 +744,7 @@ calendarGrid?.addEventListener("click", (event) => {
   }
   // A tap reveals the same rich tooltip; keyboard focus also reveals it.
   if (day && touchOrKeyboard) {
-    const newButton = calendarGrid.querySelector(\`[data-holiday-date="\${day}"]\`);
+    const newButton = calendarGrid.querySelector(`[data-holiday-date="${day}"]`);
     showHolidayPopover(newButton);
   }
 });
