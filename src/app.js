@@ -7,6 +7,7 @@ import {
   parseISODate,
   toISODate,
 } from "./attendance-rules.js";
+import { evaluateLeavePolicy } from "./leave-policy.js";
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -18,6 +19,17 @@ const startInput = $("#start-date");
 const endInput = $("#end-date");
 const endField = $("#end-field");
 const noContactInput = $("#no-contact");
+const policyOptions = $("#leave-policy-options");
+const summerFields = $("#summer-fields");
+const roleInput = $("#leave-role");
+const fullTimeInput = $("#full-time-date");
+const summerUsedInput = $("#summer-used");
+const handoverInput = $("#handover");
+const attachAnnualInput = $("#attach-annual");
+const forceMajeureInput = $("#force-majeure");
+const approvedInput = $("#manager-approved");
+const holidayStartInput = $("#holiday-start");
+const holidayEndInput = $("#holiday-end");
 const result = $("#result");
 const periodEl = $("#evaluation-period");
 const pointsBadge = $("#points-badge");
@@ -90,14 +102,32 @@ function formatMonth(date) {
 }
 
 function normalizedType(value = typeInput.value) {
-  return value === "leave-multi" ? "leave" : value;
+  return value === "leave-multi" || value === "summer" ? "leave" : value;
 }
 
 function durationDays() {
-  if (typeInput.value !== "leave-multi") return 1;
+  if (typeInput.value !== "leave-multi" && typeInput.value !== "summer") return 1;
   const start = parseISODate(startInput.value);
   const end = parseISODate(endInput.value);
   return start && end && end >= start ? daysBetween(end, start) + 1 : 1;
+}
+
+function buildPolicyInput(typeValue, request, start, end) {
+  return {
+    kind: typeValue === "summer" ? "summer" : "annual",
+    requestDate: request,
+    startDate: start,
+    endDate: end,
+    role: roleInput.value,
+    fullTimeDate: parseISODate(fullTimeInput.value),
+    summerUsed: summerUsedInput.checked,
+    handover: handoverInput.checked,
+    attachAnnual: attachAnnualInput.checked,
+    forceMajeure: forceMajeureInput.checked,
+    approved: approvedInput.checked,
+    holidayStart: parseISODate(holidayStartInput.value),
+    holidayEnd: parseISODate(holidayEndInput.value),
+  };
 }
 
 function evaluateCandidate(start, request, options = {}) {
@@ -106,9 +136,11 @@ function evaluateCandidate(start, request, options = {}) {
   const typeValue = options.typeValue ?? typeInput.value ?? "leave";
   const duration = Math.max(1, options.duration ?? durationDays());
   const end =
-    typeValue === "leave-multi" ? addDays(start, duration - 1) : start;
+    (typeValue === "leave-multi" || typeValue === "summer")
+      ? addDays(start, duration - 1)
+      : start;
 
-  return evaluateAttendance({
+  const attendance = evaluateAttendance({
     currentPoints: options.currentPoints ?? pointsInput.value ?? 96,
     type: normalizedType(typeValue),
     requestDate: request,
@@ -116,13 +148,20 @@ function evaluateCandidate(start, request, options = {}) {
     endDate: end,
     noContact: options.noContact ?? noContactInput.checked ?? false,
   });
+  if (!attendance.valid || normalizedType(typeValue) !== "leave") {
+    return attendance;
+  }
+  return {
+    ...attendance,
+    leavePolicy: evaluateLeavePolicy(buildPolicyInput(typeValue, request, start, end)),
+  };
 }
 
 function earliestSafeDate(request, options = {}) {
   for (let offset = 0; request && offset <= 400; offset += 1) {
     const candidate = addDays(request, offset);
     const evaluation = evaluateCandidate(candidate, request, options);
-    if (evaluation?.valid && evaluation.deduction === 0) return candidate;
+    if (evaluation?.valid && evaluation.deduction === 0 && evaluation.leavePolicy?.status !== "restricted") return candidate;
   }
   return null;
 }
@@ -148,6 +187,15 @@ function loadState() {
     startDate: toISODate(safe),
     endDate: toISODate(safe),
     noContact: false,
+    role: "staff",
+    fullTimeDate: "",
+    summerUsed: false,
+    handover: false,
+    attachAnnual: false,
+    forceMajeure: false,
+    approved: false,
+    holidayStart: "",
+    holidayEnd: "",
   };
 
   try {
@@ -170,6 +218,15 @@ function saveState() {
       startDate: startInput.value,
       endDate: endInput.value,
       noContact: noContactInput.checked,
+      role: roleInput.value,
+      fullTimeDate: fullTimeInput.value,
+      summerUsed: summerUsedInput.checked,
+      handover: handoverInput.checked,
+      attachAnnual: attachAnnualInput.checked,
+      forceMajeure: forceMajeureInput.checked,
+      approved: approvedInput.checked,
+      holidayStart: holidayStartInput.value,
+      holidayEnd: holidayEndInput.value,
     }),
   );
 }
@@ -182,6 +239,15 @@ function setInitialState() {
   startInput.value = state.startDate;
   endInput.value = state.endDate;
   noContactInput.checked = state.noContact;
+  roleInput.value = state.role;
+  fullTimeInput.value = state.fullTimeDate;
+  summerUsedInput.checked = state.summerUsed;
+  handoverInput.checked = state.handover;
+  attachAnnualInput.checked = state.attachAnnual;
+  forceMajeureInput.checked = state.forceMajeure;
+  approvedInput.checked = state.approved;
+  holidayStartInput.value = state.holidayStart;
+  holidayEndInput.value = state.holidayEnd;
   calendarViewDate = startOfMonth(
     parseISODate(state.startDate) || localToday(),
   );
@@ -189,8 +255,10 @@ function setInitialState() {
 }
 
 function toggleEndDate() {
-  const multi = typeInput.value === "leave-multi";
+  const multi = typeInput.value === "leave-multi" || typeInput.value === "summer";
   endField.hidden = !multi;
+  policyOptions.hidden = normalizedType() !== "leave";
+  summerFields.hidden = typeInput.value !== "summer";
   endInput.required = multi;
 
   if (multi && (!endInput.value || endInput.value < startInput.value)) {
@@ -199,6 +267,8 @@ function toggleEndDate() {
 
   if (typeInput.value === "leave") {
     policyHint.textContent = "Nghỉ 1 ngày cần báo trước ít nhất 1 tuần";
+  } else if (typeInput.value === "summer") {
+    policyHint.textContent = "Nghỉ hè: cần đăng ký trước 1–2 tháng";
   } else if (multi) {
     policyHint.textContent = "Tự xác định theo tổng số ngày nghỉ";
   } else {
@@ -242,6 +312,7 @@ function renderResult(data, requestDate, startDate) {
   }
 
   const safe = data.deduction === 0;
+  const policy = data.leavePolicy;
   const lateBy = Math.max(0, daysBetween(requestDate, data.deadline));
   const notice = noContactInput.checked
     ? "Không báo"
@@ -267,10 +338,10 @@ function renderResult(data, requestDate, startDate) {
         };
 
   const title = safe
-    ? "Ngày này đang an toàn"
+    ? "Đủ hạn theo điểm chuyên cần"
     : data.deduction === 1
-      ? "Ngày này sẽ bị trừ 1 điểm"
-      : "Ngày này sẽ bị trừ 2 điểm";
+      ? "Dự kiến bị trừ 1 điểm"
+      : "Dự kiến bị trừ 2 điểm";
 
   const timing = safe
     ? `Đủ thời gian báo trước. Hạn chót: <strong>${formatDateVN(data.deadline)}</strong>.`
@@ -289,6 +360,43 @@ function renderResult(data, requestDate, startDate) {
           </div>
         </div>
       `
+      : "";
+
+  const policySection = policy?.valid
+    ? (() => {
+        const restricted = policy.status === "restricted";
+        const tone = restricted
+          ? "border-orange-200 bg-orange-50 text-orange-900"
+          : policy.status === "review"
+            ? "border-amber-200 bg-amber-50 text-amber-900"
+            : "border-emerald-200 bg-emerald-50 text-emerald-900";
+        const name = restricted
+          ? "Hạn chế theo chính sách nghỉ"
+          : policy.status === "review"
+            ? "Cần bổ sung thông tin / phê duyệt"
+            : "Đã đáp ứng điều kiện đã khai báo";
+        const lines = [...policy.blocking, ...policy.warnings];
+        const policyList = lines.length
+          ? `<ul class="mt-2 list-disc space-y-1 pl-4">${lines.map((line) => `<li>${line}</li>`).join("")}</ul>`
+          : "";
+        const deadline = policy.noticeDeadline
+          ? `<p class="mt-1">Hạn đăng ký nghỉ hè: <strong>${formatDateVN(policy.noticeDeadline)}</strong></p>`
+          : "";
+        const workdays = policy.kind === "summer"
+          ? `<p class="mt-1">Ngày làm việc dự kiến (T2–T6): <strong>${policy.workdays}</strong>/5</p>`
+          : "";
+        return `
+          <section class="mt-3 rounded-xl border px-3 py-3 text-xs leading-5 ${tone}">
+            <strong class="block text-sm">${name}</strong>
+            <div class="mt-1 opacity-90">Quy định ${policy.kind === "summer" ? "nghỉ hè đặc biệt" : "phép năm"} RCVN · Độc lập với điểm chuyên cần.</div>
+            ${deadline}${workdays}${policyList}
+            <details class="mt-2"><summary class="cursor-pointer font-semibold underline underline-offset-2">Xem căn cứ quy định</summary>
+              <ul class="mt-2 list-disc space-y-1 pl-4">${policy.information.map((line) => `<li>${line}</li>`).join("")}</ul>
+            </details>
+          </section>`;
+      })()
+    : policy
+      ? `<p class="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">${policy.error}</p>`
       : "";
 
   result.innerHTML = `
@@ -315,6 +423,7 @@ function renderResult(data, requestDate, startDate) {
     </div>
 
     <div class="mt-3 rounded-xl border px-3 py-2.5 text-xs leading-5 ${tone.box}">${timing}</div>
+    ${policySection}
     ${suggestion}
 
     <details class="group mt-3 rounded-xl border border-slate-200 bg-white">
@@ -384,6 +493,7 @@ function renderCalendar(data, requestDate, startDate, endDate) {
     const evaluation =
       current && !beforeReference ? evaluateCandidate(date, requestDate) : null;
     const deduction = evaluation?.deduction;
+    const policyRestricted = evaluation?.leavePolicy?.status === "restricted";
 
     let status = "border-transparent bg-slate-50/60 text-slate-300";
     let label = "";
@@ -392,6 +502,10 @@ function renderCalendar(data, requestDate, startDate, endDate) {
     if (beforeReference) {
       status = "border-slate-100 bg-slate-50/80 text-slate-300 opacity-60";
       label = "Đã qua";
+    } else if (current && policyRestricted) {
+      status = "border-orange-200 bg-orange-50/90 hover:bg-orange-100";
+      label = "Hạn chế";
+      selectable = true;
     } else if (current && deduction === 0) {
       status = "border-emerald-100 bg-emerald-50/90 hover:bg-emerald-100";
       label = "An toàn";
@@ -432,7 +546,9 @@ function renderCalendar(data, requestDate, startDate, endDate) {
 
     const labelClass = beforeReference
       ? "text-slate-300"
-      : deduction === 0
+      : policyRestricted
+        ? "text-orange-700"
+        : deduction === 0
         ? "text-emerald-700"
         : deduction === 1
           ? "text-amber-700"
@@ -463,7 +579,7 @@ function renderCalendar(data, requestDate, startDate, endDate) {
 function calculate() {
   const request = parseISODate(requestInput.value);
   const start = parseISODate(startInput.value);
-  const multi = typeInput.value === "leave-multi";
+  const multi = typeInput.value === "leave-multi" || typeInput.value === "summer";
   const end = multi ? parseISODate(endInput.value) : start;
 
   if (!request) {
@@ -472,14 +588,7 @@ function calculate() {
     return;
   }
 
-  const data = evaluateAttendance({
-    currentPoints: pointsInput.value,
-    type: normalizedType(),
-    requestDate: request,
-    startDate: start,
-    endDate: end,
-    noContact: noContactInput.checked,
-  });
+  const data = evaluateCandidate(start, request);
 
   renderTop(pointsInput.value, request);
   renderResult(data, request, start);
@@ -491,7 +600,7 @@ function selectStartDate(date) {
   const oldDuration = durationDays();
   startInput.value = toISODate(date);
   endInput.value =
-    typeInput.value === "leave-multi"
+    (typeInput.value === "leave-multi" || typeInput.value === "summer")
       ? toISODate(addDays(date, oldDuration - 1))
       : startInput.value;
   calendarViewDate = startOfMonth(date);
@@ -505,7 +614,7 @@ typeInput.addEventListener("change", () => {
 
 startInput.addEventListener("change", () => {
   if (
-    typeInput.value === "leave-multi" &&
+    (typeInput.value === "leave-multi" || typeInput.value === "summer") &&
     (!endInput.value || endInput.value < startInput.value)
   ) {
     endInput.value = startInput.value;
@@ -584,6 +693,15 @@ $("#reset-btn").addEventListener("click", () => {
   startInput.value = toISODate(safe);
   endInput.value = startInput.value;
   noContactInput.checked = false;
+  roleInput.value = "staff";
+  fullTimeInput.value = "";
+  summerUsedInput.checked = false;
+  handoverInput.checked = false;
+  attachAnnualInput.checked = false;
+  forceMajeureInput.checked = false;
+  approvedInput.checked = false;
+  holidayStartInput.value = "";
+  holidayEndInput.value = "";
   calendarViewDate = startOfMonth(safe);
   toggleEndDate();
   calculate();
