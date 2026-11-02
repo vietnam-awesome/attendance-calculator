@@ -13,11 +13,15 @@ function mockFlatpickr() {
       input: field,
       config: { ...options, minDate: options.minDate ? new Date(options.minDate) : null },
       selectedDates: [],
+      altInput: { value: "", isConnected: true },
       formatDate(date, format) {
         const y = String(date.getFullYear());
         const m = String(date.getMonth() + 1).padStart(2, "0");
         const d = String(date.getDate()).padStart(2, "0");
-        return format === "Y-m" ? `${y}-${m}` : `${y}-${m}-${d}`;
+        return format === "Y-m" ? `${y}-${m}`
+          : format === "m/Y" ? `${m}/${y}`
+          : format === "d/m/Y" ? `${d}/${m}/${y}`
+          : `${y}-${m}-${d}`;
       },
       setDate(value, trigger, format) {
         const parts = value?.split("-").map(Number) || [];
@@ -67,8 +71,12 @@ test("date and month inputs keep canonical ISO values and use Vietnamese present
   assert.equal(called[0].options.locale.firstDayOfWeek, 1);
   assert.equal(called[0].options.altFormat, "d/m/Y");
   assert.equal(called[3].options.altFormat, "m/Y");
-  assert.equal(inputs.start.type, "text");
-  assert.equal(inputs.month.type, "text");
+  // The original remains a native field until Flatpickr itself hides it.
+  assert.equal(inputs.start.type, "date");
+  assert.equal(inputs.month.type, "month");
+  assert.equal(called[0].picker.altInput.value, "02/11/2026");
+  assert.equal(called[1].picker.altInput.value, "09/11/2026");
+  assert.equal(called[3].picker.altInput.value, "11/2026");
   assert.equal(inputs.start.value, "2026-11-09");
   assert.equal(inputs.month.value, "2026-11");
   assert.equal(called[1].options.disable[0](new Date(2026, 10, 7)), true);
@@ -92,6 +100,8 @@ test("synchronization updates programmatic dates without emitting change callbac
   });
   assert.equal(inputs.start.value, "2026-11-11");
   assert.equal(inputs.month.value, "2026-12");
+  assert.equal(called[1].picker.altInput.value, "11/11/2026");
+  assert.equal(called[3].picker.altInput.value, "12/2026");
   assert.equal(called[1].picker.config.minDate.getDate(), 2);
   assert.equal(called[2].picker.config.minDate.getDate(), 11);
   assert.ok(called.every(({picker}) => picker.lastTrigger === false));
@@ -121,4 +131,31 @@ test("library change callbacks use existing form handlers, not an independent ca
   });
   for (const { options } of called) options.onChange();
   assert.deepEqual(calls, ["request", "start", "end", "month"]);
+});
+
+test("visible alternate field is repaired when its value goes blank but canonical input is valid", () => {
+  const { flatpickr, called } = mockFlatpickr();
+  const controls = fields();
+  const fp = initDatePickers({
+    flatpickr,
+    monthSelectPlugin: function monthSelectPlugin() { return {}; },
+    fields: controls, handlers: {}, getToday: today,
+  });
+  const visibleStart = called[1].picker.altInput;
+  visibleStart.value = "";
+  fp.sync({ start: "2026-11-09" });
+  assert.equal(visibleStart.value, "09/11/2026");
+  assert.equal(controls.start.value, "2026-11-09");
+});
+
+test("calendar styling requests compact month headings and below-positioned popup", () => {
+  const { flatpickr, called } = mockFlatpickr();
+  initDatePickers({
+    flatpickr,
+    monthSelectPlugin: function monthSelectPlugin() { return {}; },
+    fields: fields(), handlers: {}, getToday: today,
+  });
+  assert.equal(called[0].options.position, "below left");
+  assert.equal(called[0].options.shorthandCurrentMonth, true);
+  assert.equal(called[3].options.position, "below right");
 });
