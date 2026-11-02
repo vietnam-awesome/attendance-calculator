@@ -312,14 +312,15 @@ function renderTop(points, referenceDate) {
   currentLevelEl.className = `inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold ${levelTone(level.level)}`;
 }
 
-function renderRestDayMessage(startDate) {
+function renderRestDayMessage(startDate, multi = false) {
+  const description = multi
+    ? "Khoảng nghỉ bắt đầu vào cuối tuần. Những ngày T7/CN không cần xin phép theo lịch làm việc T2–T6 mặc định, nhưng các ngày làm việc nằm trong khoảng nghỉ vẫn có thể cần xin phép. Hãy chọn ngày làm việc đầu tiên làm ngày bắt đầu."
+    : "Đây là ngày nghỉ định kỳ theo lịch làm việc T2–T6 mặc định. Không cần xin phép hay dự báo trừ điểm cho riêng ngày cuối tuần này. Hãy chọn ngày làm việc để tính điểm.";
   result.innerHTML = `
     <div class="rounded-xl border border-violet-200 bg-violet-50 p-4 text-violet-950">
       <p class="text-[10px] font-bold uppercase tracking-wide text-violet-600">Ngày nghỉ định kỳ</p>
-      <h2 class="mt-1.5 text-base font-bold">Thứ Bảy / Chủ nhật không cần xin phép</h2>
-      <p class="mt-2 text-xs leading-5">Ngày bắt đầu ${formatDateVN(startDate)} rơi vào cuối tuần.
-      Với lịch làm việc T2–T6 mặc định, đây không phải ngày nghỉ phép cần chấm điểm.
-      Hãy chọn ngày làm việc để dự báo điểm chuyên cần.</p>
+      <h2 class="mt-1.5 text-base font-bold">Thứ Bảy / Chủ nhật là ngày nghỉ</h2>
+      <p class="mt-2 text-xs leading-5">Ngày bắt đầu ${formatDateVN(startDate)} rơi vào cuối tuần. ${description}</p>
     </div>`;
 }
 
@@ -670,7 +671,7 @@ function calculate() {
   // Do not assign an artificial attendance penalty for requesting that date.
   if (isWeekend(start)) {
     renderTop(pointsInput.value, request);
-    renderRestDayMessage(start);
+    renderRestDayMessage(start, multi);
     renderCalendar(null, request, start, end);
     saveState();
     return;
