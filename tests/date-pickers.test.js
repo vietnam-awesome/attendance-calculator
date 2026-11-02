@@ -82,7 +82,7 @@ test("synchronization updates programmatic dates without emitting change callbac
   const inputs = fields();
   const picker = initDatePickers({
     flatpickr,
-    monthSelectPlugin: () => ({}),
+    monthSelectPlugin: function monthSelectPlugin() { return {}; },
     fields: inputs, handlers: {}, getToday: today,
   });
   picker.sync({
@@ -110,7 +110,7 @@ test("library change callbacks use existing form handlers, not an independent ca
   const calls = [];
   initDatePickers({
     flatpickr,
-    monthSelectPlugin: () => ({}),
+    monthSelectPlugin: function monthSelectPlugin() { return {}; },
     fields: fields(), getToday: today,
     handlers: {
       onRequest: () => calls.push("request"),
