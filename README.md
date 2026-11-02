@@ -20,6 +20,9 @@ Công cụ cá nhân giúp tự kiểm tra ngày dự định nghỉ có vượt
 - Ngày đã chọn trong quá khứ được chuyển sang ngày dự kiến hợp lệ gần nhất; ngày tương lai do người dùng chủ động chọn vẫn được giữ nguyên.
 - Khi để tab mở qua ngày mới, ngày tham chiếu tự cập nhật khi quay lại tab (trừ khi đang chỉnh thủ công mốc tính trong phiên).
 - UI responsive xây dựng bằng **Tailwind CSS v4**.
+- **Date picker bằng Flatpickr v4.6.13** (MIT, ghim phiên bản): ô Mốc tính, Ngày đang chọn, Ngày kết thúc dùng lịch tiếng Việt, hiển thị dd/mm/yyyy; ô Chọn tháng dùng plugin MonthSelect để chọn tháng/năm. Giá trị xử lý bên trong luôn ISO `YYYY-MM-DD` / `YYYY-MM`.
+- Chặn ngày quá khứ và T7/CN/ngày lễ khi chọn **ngày bắt đầu**. Ngày kết thúc có thể nằm cuối tuần vì khoảng nghỉ nhiều ngày được tính theo ngày lịch.
+- Tải qua jsDelivr, **có fallback native date/month input** nếu CDN hoặc plugin không khả dụng; không cần bundler/npm trong production. Có kiểm thử tự động cho khởi tạo, đồng bộ lựa chọn và fallback.
 - Không cần backend, framework hay API.
 
 ## Chạy local
